@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cmath>
 using namespace std;
 
 struct Node{
@@ -24,12 +25,21 @@ void load_data(Node data[100], string filename){
     file.close();
 }
 
+double calculate_distance* (Node nodes[100]){
+    double dist[100][100] = {};
+    for (int i=0; i<100; i++){
+        for(int j=0;j<100;j++){
+            double dx = nodes[i].x - nodes[j].x;
+            double dy = nodes[i].y - nodes[j].y;
+            dist[i][j] = sqrt(dx*dx + dy*dy);
+        }
+    }
+    return dist[100];
+}
+
 int main(){
     Node nodes[100];
-    
-    load_data(nodes, "kroA100.tsp");
-    for(int p = 0 ; p<100;p++)
-    {
-        cout << p+1 << ". "<< nodes[p].x << " " << nodes[p].y<<endl;
-    }
+    load_data(nodes, "data/kroA100.tsp");
+    double* distances = calculate_distance(nodes);
+
 }
