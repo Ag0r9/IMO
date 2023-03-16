@@ -41,35 +41,47 @@ double **calculate_distance (Node nodes[100]){
     return dist;
 }
 
-vector<int> nearest_neighbour(Node nodes[100], double **dist, int start_id, int end_id){
-    vector<int> not_used;
-    for (int i = 0; i < 100; i++){
-        if(i != start_id && i != end_id ) 
-            not_used.push_back(i);
-    }
-    vector <int> solution;
-    solution.push_back(start_id);
-    solution.push_back(end_id);
-    while(!not_used.empty()){
-        int min_dist = INT32_MAX;
-        int min_id = -1;
-        int after_whom_in_solution = -1;
-        for(auto i = not_used.begin(); i!=not_used.end();i++){
-            for(int j = 0; j+1 < solution.size(); j++)
-                {
-                    if(dist[solution[j]][*i] + dist[*i][solution[j+1]]< min_dist){
-                        min_id = *i;
-                        min_dist = dist[solution[j]][*i] + dist[*i][solution[j+1]];
-                        after_whom_in_solution = solution[j];
-                }
+void cycle_creation(double **dist, vector<int> &not_used, vector<int> &solution){
+    int min_dist = INT32_MAX;
+    int min_id = -1;
+    int after_whom_in_solution = -1;
+    for(auto i = not_used.begin(); i != not_used.end(); i++){
+        for(int j = 0; j+1 < solution.size(); j++)
+            {
+                int w = dist[solution[j]][*i] + dist[*i][solution[j+1]];
+                if(w <= min_dist){
+                    min_id = *i;
+                    min_dist = dist[solution[j]][*i] + dist[*i][solution[j+1]];
+                    after_whom_in_solution = solution[j];
             }
         }
-        auto q = find(solution.begin(), solution.end(), after_whom_in_solution);
-        solution.insert(q,min_id);
-        auto r = find(not_used.begin(), not_used.end(), min_id);
-        not_used.erase(r);
     }
-    return solution;
+    cout<< min_id<<" "<<after_whom_in_solution <<endl;
+    solution.insert(++(find(solution.begin(), solution.end(), after_whom_in_solution)), min_id);
+    not_used.erase(find(not_used.begin(), not_used.end(), min_id));
+}
+
+vector<vector<int>> greedy_cycle(double **dist, int first_start, int second_start){
+    vector<int> not_used;
+    for (int i = 0; i < 100; i++){
+        if(i != first_start && i != second_start) 
+            not_used.push_back(i);
+    }
+    vector <int> solution1, solution2;
+    solution1.push_back(first_start);
+    solution1.push_back(first_start);
+    while(solution1.size()<6){
+        cycle_creation(dist,not_used,solution1);
+    }
+    solution2.push_back(second_start);
+    solution2.push_back(second_start);
+    while(solution2.size()<1){
+        cycle_creation(dist, not_used, solution2);
+    }
+    vector<vector<int>> x;
+    x.push_back(solution1);
+    x.push_back(solution2);
+    return x;
 }
 
 int main(){
@@ -78,14 +90,15 @@ int main(){
     load_data(nodes, "data/kroA100.tsp");
     double** distances = calculate_distance(nodes);
     
-    int end_id, start_id = rand() % 100;
+    int second_id, first_id = rand() % 100;
     do{
-    end_id = rand() % 100;
-    }while(end_id == start_id);
-    vector<int> x = nearest_neighbour(nodes, distances, start_id, end_id);    
+    second_id = rand() % 100;
+    }while(second_id == first_id);
+    vector<vector<int>> x = greedy_cycle(distances, first_id, second_id);    
 
-    for(int i = 0; i<100;i++)
-        cout<< x[i] <<" ";
+    for(int i = 0; i<6;i++)
+        cout<< x[0][i] <<" ";
+
     //for(int i = 0; i < 100; i++){
     //    for(int j = 0; j < 100; j++){
     //        delete distances[i];
