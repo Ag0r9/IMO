@@ -49,7 +49,7 @@ double **calculate_distance(Node *nodes)
     return dist;
 }
 
-void regret_heuristics(double **dist,vector<int> &not_used, vector<int> &solution)
+void regret_heuristics(double **dist, vector<int> &not_used, vector<int> &solution)
 {
     int reg_id = -1;
     int really_after_whom_in_solution = -1;
@@ -211,12 +211,11 @@ int main()
     vector<vector<int>> x = greedy_cycle(distances, first_id, second_id);
 
     double d = 0.0;
-    for (int i = 0; i < 50; i++)
-        d += distances[x[0][i]][x[0][i + 1]];
-
-    for (int i = 0; i < 50; i++)
-        d += distances[x[1][i]][x[1][i + 1]];
-
+    for (int j = 0; j < 2; j++)
+    {
+        for (int i = 0; i < 50; i++)
+            d += distances[x[j][i]][x[j][i + 1]];
+    }
     cout << "Greedy cycle: " << d << endl;
 
     vector<vector<int>> y = nearest_neighbour(distances, first_id, second_id);
