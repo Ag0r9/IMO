@@ -49,6 +49,43 @@ double **calculate_distance(Node *nodes)
     return dist;
 }
 
+void regret_heuristics(double **dist,vector<int> &not_used, vector<int> &solution)
+{
+    int reg_id = -1;
+    int really_after_whom_in_solution = -1;
+    double max_regret = -1; // never regretti
+    for (auto i = not_used.begin(); i != not_used.end(); i++)
+    {
+        double min_dist = DBL_MAX;
+        double min_dist_2 = DBL_MAX;
+        int min_id = -1;
+        int after_whom_in_solution = -1;
+        for (int j = 0; j + 1 < solution.size(); j++)
+        {
+            double w = dist[solution[j]][*i] + dist[*i][solution[j + 1]] - dist[solution[j]][solution[j + 1]];
+            if (w < min_dist)
+            {
+                min_id = *i;
+                min_dist_2 = min_dist;
+                min_dist = w;
+                after_whom_in_solution = solution[j];
+            }
+            else if (w < min_dist_2)
+            {
+                min_dist_2 = w;
+            }
+        }
+        if (min_dist_2 - min_dist > max_regret)
+        {
+            max_regret = min_dist_2 - min_dist;
+            reg_id = min_id;
+            really_after_whom_in_solution = after_whom_in_solution;
+        }
+    }
+    solution.insert(++(find(solution.begin(), solution.end(), really_after_whom_in_solution)), reg_id);
+    not_used.erase(find(not_used.begin(), not_used.end(), reg_id));
+}
+
 void cycle_creation(double **dist, vector<int> &not_used, vector<int> &solution)
 {
     double min_dist = DBL_MAX;
@@ -142,7 +179,7 @@ vector<vector<int>> greedy_cycle(double **dist, int first_start, int second_star
     solution1.push_back(first_start);
     while (solution1.size() < 51)
         cycle_creation(dist, not_used, solution1);
-    
+
     solution2.push_back(second_start);
     solution2.push_back(second_start);
     while (solution2.size() < 51)
@@ -157,7 +194,7 @@ vector<vector<int>> greedy_cycle(double **dist, int first_start, int second_star
 int main()
 {
     srand(time(NULL));
-    Node* nodes = new Node[100];
+    Node *nodes = new Node[100];
     load_data(nodes, "data/kroA100.tsp");
     double **distances = calculate_distance(nodes);
 
@@ -184,18 +221,16 @@ int main()
 
     vector<vector<int>> y = nearest_neighbour(distances, first_id, second_id);
     int d2 = 0.0;
-    for (int i = 0; i < 50; i++)
+    for (int j = 0; j < 2; j++)
     {
-        d2 += distances[y[0][i]][y[0][i + 1]];
+        for (int i = 0; i < 50; i++)
+            d2 += distances[y[j][i]][y[j][i + 1]];
     }
-
-    for (int i = 0; i < 50; i++)
-        d2 += distances[y[1][i]][y[1][i + 1]];
 
     cout << "Nearest neighbour: " << d2 << endl;
 
     delete nodes;
     delete[] distances;
-    
+
     return 0;
 }
