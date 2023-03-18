@@ -137,6 +137,31 @@ void find_nearest(double **dist, vector<int> &not_used, vector<int> &solution)
     solution.insert(++(find(solution.begin(), solution.end(), after_whom_in_solution)), min_id);
     not_used.erase(find(not_used.begin(), not_used.end(), min_id));
 }
+vector<vector<int>> greedy_cycle_regret(double **dist, int first_start, int second_start)
+{
+    vector<int> not_used;
+    for (int i = 0; i < 100; i++)
+    {
+        if (i != first_start && i != second_start)
+            not_used.push_back(i);
+    }
+    vector<int> solution1, solution2;
+    solution1.push_back(first_start);
+    solution1.push_back(first_start);
+    while (solution1.size() < 51)
+        regret_heuristics(dist, not_used, solution1);
+
+    solution2.push_back(second_start);
+    solution2.push_back(second_start);
+    while (solution2.size() < 51)
+        regret_heuristics(dist, not_used, solution2);
+
+    vector<vector<int>> x;
+    x.push_back(solution1);
+    x.push_back(solution2);
+    return x;
+}
+
 
 vector<vector<int>> nearest_neighbour(double **dist, int first_start, int second_start)
 {
@@ -227,6 +252,16 @@ int main()
     }
 
     cout << "Nearest neighbour: " << d2 << endl;
+
+    vector<vector<int>> z = greedy_cycle_regret(distances, first_id, second_id);
+    int d3 = 0.0;
+    for (int j = 0; j < 2; j++)
+    {
+        for (int i = 0; i < 50; i++)
+            d3 += distances[z[j][i]][z[j][i + 1]];
+    }
+
+    cout << "Regret heuristic: " << d3 << endl;
 
     delete nodes;
     delete[] distances;
