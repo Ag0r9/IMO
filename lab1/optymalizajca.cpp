@@ -14,6 +14,15 @@ struct Node
     int y;
 };
 
+void print_2d_vector(const std::vector<std::vector<int>>& vec) {
+    for (const auto& row : vec) {
+        for (const auto& val : row) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 void load_data(Node *data, string filename)
 {
     fstream file;
