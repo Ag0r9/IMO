@@ -13,9 +13,7 @@ class Main {
     }
 
     static void load_data(Node[] data, String filename) throws IOException {
-        URL xx = Main.class.getClassLoader().getResource(filename);
-
-        Scanner sc = new Scanner(xx.openStream());
+        Scanner sc = new Scanner(Main.class.getClassLoader().getResource(filename).openStream());
 
         for (int i = 0; i < 6; i++)
             sc.nextLine();
