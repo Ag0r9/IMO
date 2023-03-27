@@ -1,13 +1,13 @@
-import java.net.URL;
 import java.util.*;
 import java.io.*;
 
 class Main {
     static class Node {
-        Node(int x, int y){
-            this.x =x;
+        Node(int x, int y) {
+            this.x = x;
             this.y = y;
         }
+
         int x;
         int y;
     }
@@ -22,7 +22,7 @@ class Main {
             sc.next();
             int x = Integer.parseInt(sc.next());
             int y = Integer.parseInt(sc.next());
-            data[i] = new Node(x,y);
+            data[i] = new Node(x, y);
         }
         sc.close();
     }
@@ -63,12 +63,14 @@ class Main {
             if (i != first_start && i != second_start)
                 not_used.add(i);
         }
-        ArrayList<Integer> solution1 = new ArrayList<>(){{
+        ArrayList<Integer> solution1 = new ArrayList<>() {{
             add(first_start);
-            add(first_start);}};
-        ArrayList<Integer> solution2 = new ArrayList<>(){{
+            add(first_start);
+        }};
+        ArrayList<Integer> solution2 = new ArrayList<>() {{
             add(second_start);
-            add(second_start);}};
+            add(second_start);
+        }};
 
         while (solution1.size() < 51)
             cycle_creation(dist, not_used, solution1);
@@ -76,23 +78,59 @@ class Main {
         while (solution2.size() < 51)
             cycle_creation(dist, not_used, solution2);
 
-        ArrayList<Integer> x[] = new ArrayList[2];
-        x[0] = solution1;
-        x[1] = solution2;
+        ArrayList<Integer> x[] = new ArrayList[]{solution1, solution2};
         return x;
     }
-    static int find_second_starting_node(int first_id, double[][] distances){
+
+    static int find_second_starting_node(int first_id, double[][] distances) {
         int second_id = -1;
         double max_dist = 0.0;
-        for (int i = 0; i < 100; i++)
-        {
-            if (distances[i][first_id] > max_dist)
-            {
+        for (int i = 0; i < 100; i++) {
+            if (distances[i][first_id] > max_dist) {
                 second_id = i;
                 max_dist = distances[i][first_id];
             }
         }
         return second_id;
+    }
+
+
+    static ArrayList<Integer>[] greedy_vertex_exchange(
+            double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
+        int are_cycles_the_same = first_cycle.equals(second_cycle) ? 1 : -1;
+        //jesli działamy wewnątrz jednego cyklu, to nie porównuj wierzchołków oddalonych
+        //o mniej niż dwa, bo już są ze sobą połączone. Jesli są z innych cykli omin warunek,
+        //gdyz abs > -2
+        for (int i = 1; i < first_cycle.size() - 1; i++) {
+            for (int j = 1; j < second_cycle.size() - 1; j++) {
+                if (Math.abs(i - j) < 2 * are_cycles_the_same)
+                    continue;
+
+                int i_prev = first_cycle.get(i-1);
+                int i_value = first_cycle.get(i);
+                int i_next = first_cycle.get(i+1);
+
+                int j_prev = second_cycle.get(j-1);
+                int j_value = second_cycle.get(j);
+                int j_next = second_cycle.get(j+1);
+
+                double gain =
+                        (dist[i_prev][j_value] + dist[j_value][i_next] +
+                        dist[j_prev][i_value] + dist[i_value][j_next]) -
+                                (dist[i_prev][i_value] + dist[i_value][i_next] +
+                                dist[j_prev][j_value] + dist[j_value][j_next]);
+
+                if (gain < 0) {
+                    first_cycle.set(i, j_value);
+                    second_cycle.set(j, i_value);
+
+                    ArrayList<Integer> x[] = new ArrayList[]{first_cycle, second_cycle};
+                    return x;
+                }
+            }
+        }
+        ArrayList<Integer> x[] = new ArrayList[]{first_cycle, second_cycle};
+        return x;
     }
 
     public static void main(String[] args) throws IOException {
@@ -105,13 +143,46 @@ class Main {
         int second_id = find_second_starting_node(first_id, distances);
 
         ArrayList<Integer> x[] = greedy_cycle(distances, first_id, second_id);
-
+        var y = x;
         double d = 0.0;
         for (int j = 0; j < 2; j++) {
             for (int i = 0; i < 50; i++) {
-                d += distances[x[j].get(i)][x[j].get(i + 1)];
+                d += distances[y[j].get(i)][y[j].get(i + 1)];
             }
         }
-        System.out.println("Greedy cycle: " + d);
+        System.out.println("Greedy cycle:             " + d);
+        int q = 0;
+        var w =y;
+        do{
+            w = x;
+            x = greedy_vertex_exchange(distances,w[0],w[0]);
+            q++;
+        }while(q<100);
+
+        y[0]=x[0];
+        d = 0.0;
+        for (int j = 0; j < 2; j++) {
+            for (int i = 0; i < 50; i++) {
+                d += distances[y[j].get(i)][y[j].get(i + 1)];
+            }
+        }
+        System.out.println("Greedy cycle, first cycle:"+ d);
+
+        q = 0;
+        x = y;
+        do{
+            w = x;
+            x = greedy_vertex_exchange(distances,w[1],w[1]);
+            q++;
+        }while(q<100);
+
+        y[1]=x[1];
+        d = 0.0;
+        for (int j = 0; j < 2; j++) {
+            for (int i = 0; i < 50; i++) {
+                d += distances[y[j].get(i)][y[j].get(i + 1)];
+            }
+        }
+        System.out.println("Greedy cycle, second cycle:"+ d);
     }
 }
