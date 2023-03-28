@@ -96,14 +96,10 @@ class Main {
         return second_id;
     }
 
-    static ArrayList<Integer> greedy_vertex_inside_one_exchange(
-            double[][] dist, ArrayList<Integer> cycle) {
-        //jesli działamy wewnątrz jednego cyklu, to nie porównuj wierzchołków oddalonych
-        //o mniej niż dwa, bo już są ze sobą połączone. Jesli są z innych cykli omin warunek,
-        //gdyz abs > -2
+    static ArrayList<Integer> greedy_vertex_inside_one_exchange(double[][] dist, ArrayList<Integer> cycle) {
         for (int i = 1; i < cycle.size() - 1; i++) {
             for (int j = 1; j < cycle.size() - 1; j++) {
-                if (Math.abs(i - j) < 2)
+                if (i == j)
                     continue;
 
                 int i_prev = cycle.get(i - 1);
@@ -162,14 +158,9 @@ class Main {
             double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
         double min_cost = Double.MAX_VALUE;
         int i_idx_to_switch = -1, j_idx_to_switch = -1;
-        int are_cycles_the_same = first_cycle.equals(second_cycle) ? 1 : -1;
-        //jesli działamy wewnątrz jednego cyklu, to nie porównuj wierzchołków oddalonych
-        //o mniej niż dwa, bo już są ze sobą połączone. Jesli są z innych cykli omin warunek,
-        //gdyz abs > -2
+
         for (int i = 1; i < first_cycle.size() - 1; i++) {
             for (int j = 1; j < second_cycle.size() - 1; j++) {
-                if (Math.abs(i - j) < 2 * are_cycles_the_same)
-                    continue;
 
                 int i_prev = first_cycle.get(i - 1);
                 int i_value = first_cycle.get(i);
@@ -199,13 +190,12 @@ class Main {
         return new ArrayList[]{first_cycle, second_cycle};
     }
 
-    static ArrayList<Integer> steep_vertex_inside_one_exchange(
-            double[][] dist, ArrayList<Integer> cycle) {
+    static ArrayList<Integer> steep_vertex_inside_one_exchange(double[][] dist, ArrayList<Integer> cycle) {
         double min_cost = Double.MAX_VALUE;
         int i_idx_to_switch = -1, j_idx_to_switch = -1;
         for (int i = 1; i < cycle.size() - 1; i++) {
             for (int j = 1; j < cycle.size() - 1; j++) {
-                if (Math.abs(i - j) < 2)
+                if (i == j)
                     continue;
 
                 int i_prev = cycle.get(i - 1);
@@ -286,14 +276,18 @@ class Main {
         return first_cycle;
     }
 
-    static void count_result(double distances[][], ArrayList<Integer>[] cycles, String type) {
+    static void count_result(double distances[][], ArrayList<Integer>[] cycles, String[] type) {
         double total_dist = 0.0;
         for (int cycle_no = 0; cycle_no < cycles.length; cycle_no++) {
             for (int node_no = 0; node_no < cycles[cycle_no].size() - 1; node_no++) {
                 total_dist += distances[cycles[cycle_no].get(node_no)][cycles[cycle_no].get(node_no + 1)];
             }
         }
-        System.out.println(type + "  " + total_dist);
+        String args = "";
+        for (String s : type) {
+            args += (s + " ");
+        }
+        System.out.println(args + total_dist);
     }
 
     static ArrayList<Integer>[] generate_random_cycles(int first_id, int second_id) {
@@ -329,34 +323,39 @@ class Main {
         Random rand = new Random();
         int first_id = rand.nextInt(100);
         int second_id = find_second_starting_node(first_id, distances);
-
         ArrayList<Integer> cycles[];
+
         if (args[0].equals("random"))
             cycles = generate_random_cycles(first_id, second_id);
         else
             cycles = generate_greedy_cycles(distances, first_id, second_id);
 
-        if (args[1].equals("steep")) {
-            cycles = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
+        for (int i = 0; i < 300; i++) {
+            if (args[1].equals("steep")) {
+                cycles = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
 
-            if (args[2].equals("edges")) {
-                cycles[0] = steep_edge_exchange(distances, cycles[0]);
-                cycles[1] = steep_edge_exchange(distances, cycles[1]);
-            } else {
-                cycles[0] = steep_vertex_inside_one_exchange(distances, cycles[0]);
-                cycles[1] = steep_vertex_inside_one_exchange(distances, cycles[1]);
-            }
-        } else if (args[1].equals("greedy")) {
-            cycles = greedy_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
+                if (args[2].equals("edges")) {
+                    cycles[0] = steep_edge_exchange(distances, cycles[0]);
+                    cycles[1] = steep_edge_exchange(distances, cycles[1]);
+                } else {
+                    cycles[0] = steep_vertex_inside_one_exchange(distances, cycles[0]);
+                    cycles[1] = steep_vertex_inside_one_exchange(distances, cycles[1]);
+                }
 
-            if (args[2] == "edges") {
-                cycles[0] = greedy_edge_exchange(distances, cycles[0]);
-                cycles[1] = greedy_edge_exchange(distances, cycles[1]);
+            } else if (args[1].equals("greedy")) {
+                cycles = greedy_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
+
+                if (args[2] == "edges") {
+                    cycles[0] = greedy_edge_exchange(distances, cycles[0]);
+                    cycles[1] = greedy_edge_exchange(distances, cycles[1]);
+                } else {
+                    cycles[0] = greedy_vertex_inside_one_exchange(distances, cycles[0]);
+                    cycles[1] = greedy_vertex_inside_one_exchange(distances, cycles[1]);
+                }
             } else {
-                cycles[0] = greedy_vertex_inside_one_exchange(distances, cycles[0]);
-                cycles[1] = greedy_vertex_inside_one_exchange(distances, cycles[1]);
+                int operation = rand.nextInt(3);
             }
         }
-        count_result(distances, cycles, args[0] + " " + args[1] + " " + args[2]);
+        count_result(distances, cycles, args);
     }
 }
