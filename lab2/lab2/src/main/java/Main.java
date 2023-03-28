@@ -1,5 +1,6 @@
 import java.util.*;
 import java.io.*;
+import java.util.stream.Collectors;
 
 class Main {
     static class Node {
@@ -106,21 +107,21 @@ class Main {
                 if (Math.abs(i - j) < 2 * are_cycles_the_same)
                     continue;
 
-                int i_prev = first_cycle.get(i-1);
+                int i_prev = first_cycle.get(i - 1);
                 int i_value = first_cycle.get(i);
-                int i_next = first_cycle.get(i+1);
+                int i_next = first_cycle.get(i + 1);
 
-                int j_prev = second_cycle.get(j-1);
+                int j_prev = second_cycle.get(j - 1);
                 int j_value = second_cycle.get(j);
-                int j_next = second_cycle.get(j+1);
+                int j_next = second_cycle.get(j + 1);
 
-                double gain =
+                double cost =
                         (dist[i_prev][j_value] + dist[j_value][i_next] +
-                        dist[j_prev][i_value] + dist[i_value][j_next]) -
+                                dist[j_prev][i_value] + dist[i_value][j_next]) -
                                 (dist[i_prev][i_value] + dist[i_value][i_next] +
-                                dist[j_prev][j_value] + dist[j_value][j_next]);
+                                        dist[j_prev][j_value] + dist[j_value][j_next]);
 
-                if (gain < 0) {
+                if (cost < 0) {
                     first_cycle.set(i, j_value);
                     second_cycle.set(j, i_value);
 
@@ -133,6 +134,83 @@ class Main {
         return x;
     }
 
+    static ArrayList<Integer> greedy_edge_exchange(double[][] dist, ArrayList<Integer> first_cycle) {
+        for (int i = 0; i < first_cycle.size() - 1; i++) {
+            for (int j = 0; j < first_cycle.size() - 1; j++) {
+                if (Math.abs(i - j) < 3)
+                    continue;
+
+                int i_value = first_cycle.get(i);
+                int i_next = first_cycle.get(i + 1);
+
+                int j_value = first_cycle.get(j);
+                int j_next = first_cycle.get(j + 1);
+
+                double cost = (dist[i_value][j_value] + dist[i_next][j_next]) - (dist[i_value][i_next] + dist[j_value][j_next]);
+                if (cost < 0) {
+                    Collections.reverse(first_cycle.subList(i + 1, j+1));
+                    return first_cycle;
+                }
+            }
+        }
+
+        return first_cycle;
+    }
+
+    void print_results(double distances[][], ArrayList[] x) {
+        var y = x;
+        int q = 0;
+        var w = y;
+        do {
+            w = x;
+            x = greedy_vertex_exchange(distances, w[0], w[0]);
+            q++;
+        } while (q < 100);
+
+        y[0] = x[0];
+        double d = 0.0;
+        for (int j = 0; j < 2; j++) {
+            for (int i = 0; i < 50; i++) {
+                d += distances[(int) y[j].get(i)][(int) y[j].get(i + 1)];
+            }
+        }
+        System.out.println("Greedy cycle, first cycle:" + d);
+
+        q = 0;
+        x = y;
+        do {
+            w = x;
+            x = greedy_vertex_exchange(distances, w[1], w[1]);
+            q++;
+        } while (q < 100);
+
+        y[1] = x[1];
+        d = 0.0;
+        for (int j = 0; j < 2; j++) {
+            for (int i = 0; i < 50; i++) {
+                d += distances[(int) y[j].get(i)][(int) y[j].get(i + 1)];
+            }
+        }
+        System.out.println("Greedy cycle, second cycle:" + d);
+
+        q = 0;
+        x = y;
+        do {
+            w = x;
+            x = greedy_vertex_exchange(distances, w[0], w[1]);
+            q++;
+        } while (q < 400);
+
+        y = x;
+        d = 0.0;
+        for (int j = 0; j < 2; j++) {
+            for (int i = 0; i < 50; i++) {
+                d += distances[(int) y[j].get(i)][(int) y[j].get(i + 1)];
+            }
+        }
+        System.out.println("Greedy cycle, exchange between:" + d);
+    }
+
     public static void main(String[] args) throws IOException {
         Node[] nodes = new Node[100];
         load_data(nodes, "kroA100.tsp");
@@ -141,8 +219,19 @@ class Main {
         Random rand = new Random();
         int first_id = rand.nextInt(100);
         int second_id = find_second_starting_node(first_id, distances);
-
+//        ArrayList<Integer> x[] = new ArrayList[2];
+//        x[0] = new ArrayList<>();
+//        x[1] = new ArrayList<>();
+//        for (int i = 0; x[0].size() <= 50; i++) {
+//            if (i != first_id)
+//                x[0].add(i);
+//        }
+//        for (int i = 0; x[1].size() <= 50; i++) {
+//            if (i != second_id)
+//                x[1].add(i);
+//        }
         ArrayList<Integer> x[] = greedy_cycle(distances, first_id, second_id);
+
         var y = x;
         double d = 0.0;
         for (int j = 0; j < 2; j++) {
@@ -151,38 +240,19 @@ class Main {
             }
         }
         System.out.println("Greedy cycle:             " + d);
-        int q = 0;
-        var w =y;
-        do{
-            w = x;
-            x = greedy_vertex_exchange(distances,w[0],w[0]);
-            q++;
-        }while(q<100);
 
-        y[0]=x[0];
+        for (int i = 0; i < 300; i++) {
+            y[0] = greedy_edge_exchange(distances, y[0]);
+            y[1] = greedy_edge_exchange(distances, y[1]);
+        }
         d = 0.0;
         for (int j = 0; j < 2; j++) {
             for (int i = 0; i < 50; i++) {
                 d += distances[y[j].get(i)][y[j].get(i + 1)];
             }
-        }
-        System.out.println("Greedy cycle, first cycle:"+ d);
 
-        q = 0;
-        x = y;
-        do{
-            w = x;
-            x = greedy_vertex_exchange(distances,w[1],w[1]);
-            q++;
-        }while(q<100);
-
-        y[1]=x[1];
-        d = 0.0;
-        for (int j = 0; j < 2; j++) {
-            for (int i = 0; i < 50; i++) {
-                d += distances[y[j].get(i)][y[j].get(i + 1)];
-            }
         }
-        System.out.println("Greedy cycle, second cycle:"+ d);
+        System.out.println("Greedy cycle: edges       " + d);
+
     }
 }
