@@ -96,7 +96,6 @@ class Main {
         return second_id;
     }
 
-
     static ArrayList<Integer> greedy_vertex_inside_one_exchange(
             double[][] dist, ArrayList<Integer> cycle) {
         //jesli działamy wewnątrz jednego cyklu, to nie porównuj wierzchołków oddalonych
