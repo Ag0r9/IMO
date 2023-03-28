@@ -97,16 +97,43 @@ class Main {
     }
 
 
-    static ArrayList<Integer>[] greedy_vertex_exchange(
-            double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
-        int are_cycles_the_same = first_cycle.equals(second_cycle) ? 1 : -1;
+    static ArrayList<Integer> greedy_vertex_inside_one_exchange(
+            double[][] dist, ArrayList<Integer> cycle) {
         //jesli działamy wewnątrz jednego cyklu, to nie porównuj wierzchołków oddalonych
         //o mniej niż dwa, bo już są ze sobą połączone. Jesli są z innych cykli omin warunek,
         //gdyz abs > -2
+        for (int i = 1; i < cycle.size() - 1; i++) {
+            for (int j = 1; j < cycle.size() - 1; j++) {
+                if (Math.abs(i - j) < 2)
+                    continue;
+
+                int i_prev = cycle.get(i - 1);
+                int i_value = cycle.get(i);
+                int i_next = cycle.get(i + 1);
+
+                int j_prev = cycle.get(j - 1);
+                int j_value = cycle.get(j);
+                int j_next = cycle.get(j + 1);
+
+                double cost =
+                        (dist[i_prev][j_value] + dist[j_value][i_next] +
+                                dist[j_prev][i_value] + dist[i_value][j_next]) -
+                                (dist[i_prev][i_value] + dist[i_value][i_next] +
+                                        dist[j_prev][j_value] + dist[j_value][j_next]);
+
+                if (cost < 0) {
+                    Collections.swap(cycle, i, j);
+                    return cycle;
+                }
+            }
+        }
+        return cycle;
+    }
+
+    static ArrayList<Integer>[] greedy_vertex_between_two_exchange(
+            double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
         for (int i = 1; i < first_cycle.size() - 1; i++) {
             for (int j = 1; j < second_cycle.size() - 1; j++) {
-                if (Math.abs(i - j) < 2 * are_cycles_the_same)
-                    continue;
 
                 int i_prev = first_cycle.get(i - 1);
                 int i_value = first_cycle.get(i);
@@ -132,7 +159,7 @@ class Main {
         return new ArrayList[]{first_cycle, second_cycle};
     }
 
-    static ArrayList<Integer>[] steep_vertex_exchange(
+    static ArrayList<Integer>[] steep_vertex_between_two_exchange(
             double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
         double min_cost = Double.MAX_VALUE;
         int i_idx_to_switch = -1, j_idx_to_switch = -1;
@@ -173,6 +200,41 @@ class Main {
         return new ArrayList[]{first_cycle, second_cycle};
     }
 
+    static ArrayList<Integer> steep_vertex_inside_one_exchange(
+            double[][] dist, ArrayList<Integer> cycle) {
+        double min_cost = Double.MAX_VALUE;
+        int i_idx_to_switch = -1, j_idx_to_switch = -1;
+        for (int i = 1; i < cycle.size() - 1; i++) {
+            for (int j = 1; j < cycle.size() - 1; j++) {
+                if (Math.abs(i - j) < 2)
+                    continue;
+
+                int i_prev = cycle.get(i - 1);
+                int i_value = cycle.get(i);
+                int i_next = cycle.get(i + 1);
+
+                int j_prev = cycle.get(j - 1);
+                int j_value = cycle.get(j);
+                int j_next = cycle.get(j + 1);
+
+                double cost =
+                        (dist[i_prev][j_value] + dist[j_value][i_next] +
+                                dist[j_prev][i_value] + dist[i_value][j_next]) -
+                                (dist[i_prev][i_value] + dist[i_value][i_next] +
+                                        dist[j_prev][j_value] + dist[j_value][j_next]);
+
+                if (cost < 0 && min_cost > cost) {
+                    min_cost = cost;
+                    i_idx_to_switch = i;
+                    j_idx_to_switch = j;
+                }
+            }
+        }
+        if (min_cost != Double.MAX_VALUE) {
+            Collections.swap(cycle, i_idx_to_switch, j_idx_to_switch);
+        }
+        return cycle;
+    }
 
     static ArrayList<Integer> greedy_edge_exchange(double[][] dist, ArrayList<Integer> first_cycle) {
         for (int i = 0; i < first_cycle.size() - 1; i++) {
@@ -225,95 +287,41 @@ class Main {
         return first_cycle;
     }
 
-
-    void print_results(double distances[][], ArrayList[] x) {
-        for (int i = 0; i < 300; i++) {
-            x[0] = greedy_edge_exchange(distances, x[0]);
-            x[1] = greedy_edge_exchange(distances, x[1]);
-        }
-        count_result(distances, x, "edges");
-        var y = x;
-        int q = 0;
-        var w = y;
-        do {
-            w = x;
-            x = greedy_vertex_exchange(distances, w[0], w[0]);
-            q++;
-        } while (q < 100);
-
-        y[0] = x[0];
-        double d = 0.0;
-        for (int j = 0; j < 2; j++) {
-            for (int i = 0; i < 50; i++) {
-                d += distances[(int) y[j].get(i)][(int) y[j].get(i + 1)];
-            }
-        }
-        System.out.println("Greedy cycle, first cycle:" + d);
-
-        q = 0;
-        x = y;
-        do {
-            w = x;
-            x = greedy_vertex_exchange(distances, w[1], w[1]);
-            q++;
-        } while (q < 100);
-
-        y[1] = x[1];
-        d = 0.0;
-        for (int j = 0; j < 2; j++) {
-            for (int i = 0; i < 50; i++) {
-                d += distances[(int) y[j].get(i)][(int) y[j].get(i + 1)];
-            }
-        }
-        System.out.println("Greedy cycle, second cycle:" + d);
-
-        q = 0;
-        x = y;
-        do {
-            w = x;
-            x = greedy_vertex_exchange(distances, w[0], w[1]);
-            q++;
-        } while (q < 400);
-
-        y = x;
-        d = 0.0;
-        for (int j = 0; j < 2; j++) {
-            for (int i = 0; i < 50; i++) {
-                d += distances[(int) y[j].get(i)][(int) y[j].get(i + 1)];
-            }
-        }
-        System.out.println("Greedy cycle, exchange between:" + d);
-    }
-
     static void count_result(double distances[][], ArrayList<Integer>[] cycles, String type) {
         double total_dist = 0.0;
-        for (int j = 0; j < 2; j++) {
-            for (int i = 0; i < 50; i++) {
-                total_dist += distances[cycles[j].get(i)][cycles[j].get(i + 1)];
+        for (int cycle_no = 0; cycle_no < cycles.length; cycle_no++) {
+            for (int node_no = 0; node_no < cycles[cycle_no].size() - 1; node_no++) {
+                total_dist += distances[cycles[cycle_no].get(node_no)][cycles[cycle_no].get(node_no + 1)];
             }
         }
-        System.out.println("Greedy cycle: " + type + "  " + total_dist);
+        System.out.println(type + "  " + total_dist);
     }
-    static ArrayList<Integer>[] generate_random_cycles(int first_id, int second_id){
-        List<Integer> not_used = IntStream.range(0, 100).filter(i-> i!=first_id && i!=second_id).boxed().collect(Collectors.toList());
-        ArrayList<Integer> first_cycle = new ArrayList<>(){{add(first_id);}};
-        ArrayList<Integer> second_cycle = new ArrayList<>(){{add(second_id);}};
+
+    static ArrayList<Integer>[] generate_random_cycles(int first_id, int second_id) {
+        List<Integer> not_used = IntStream.range(0, 100).filter(i -> i != first_id && i != second_id).boxed().collect(Collectors.toList());
+        ArrayList<Integer> first_cycle = new ArrayList<>() {{
+            add(first_id);
+        }};
+        ArrayList<Integer> second_cycle = new ArrayList<>() {{
+            add(second_id);
+        }};
 
         Random rand = new Random();
-        while(first_cycle.size()<50){
-            int idx =rand.nextInt(not_used.size());
+        while (first_cycle.size() < 50) {
+            int idx = rand.nextInt(not_used.size());
             first_cycle.add(idx);
             not_used.remove(idx);
         }
         first_cycle.add(first_id);
-        while(second_cycle.size()<50){
-            int idx =rand.nextInt(not_used.size());
+        while (second_cycle.size() < 50) {
+            int idx = rand.nextInt(not_used.size());
             second_cycle.add(idx);
             not_used.remove(idx);
         }
         second_cycle.add(first_id);
-        return new ArrayList[]{first_cycle,second_cycle};
+        return new ArrayList[]{first_cycle, second_cycle};
     }
+
     public static void main(String[] args) throws IOException {
         Node[] nodes = new Node[100];
         load_data(nodes, "kroA100.tsp");
@@ -323,12 +331,33 @@ class Main {
         int first_id = rand.nextInt(100);
         int second_id = find_second_starting_node(first_id, distances);
 
-        //ArrayList<Integer> cycles[] =generate_random_cycles(first_id,second_id);
-        ArrayList<Integer> cycles[] = generate_greedy_cycles(distances, first_id, second_id);
+        ArrayList<Integer> cycles[];
+        if (args[0].equals("random"))
+            cycles = generate_random_cycles(first_id, second_id);
+        else
+            cycles = generate_greedy_cycles(distances, first_id, second_id);
 
-        count_result(distances, cycles, "initial");
+        if (args[1].equals("steep")) {
+            cycles = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
 
+            if (args[2].equals("edges")) {
+                cycles[0] = steep_edge_exchange(distances, cycles[0]);
+                cycles[1] = steep_edge_exchange(distances, cycles[1]);
+            } else {
+                cycles[0] = steep_vertex_inside_one_exchange(distances, cycles[0]);
+                cycles[1] = steep_vertex_inside_one_exchange(distances, cycles[1]);
+            }
+        } else if (args[1].equals("greedy")) {
+            cycles = greedy_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
 
-
+            if (args[2] == "edges") {
+                cycles[0] = greedy_edge_exchange(distances, cycles[0]);
+                cycles[1] = greedy_edge_exchange(distances, cycles[1]);
+            } else {
+                cycles[0] = greedy_vertex_inside_one_exchange(distances, cycles[0]);
+                cycles[1] = greedy_vertex_inside_one_exchange(distances, cycles[1]);
+            }
+        }
+        count_result(distances, cycles, args[0] + " " + args[1] + " " + args[2]);
     }
 }
