@@ -102,23 +102,19 @@ class Main {
                 if (i == j)
                     continue;
 
-                int i_prev = cycle.get(i - 1);
-                int i_value = cycle.get(i);
-                int i_next = cycle.get(i + 1);
+                double cost = -(dist[cycle.get(i-1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i+1)] +
+                        dist[cycle.get(j-1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j+1)]);
 
-                int j_prev = cycle.get(j - 1);
-                int j_value = cycle.get(j);
-                int j_next = cycle.get(j + 1);
+                Collections.swap(cycle,i,j);
 
-                double cost =
-                        (dist[i_prev][j_value] + dist[j_value][i_next] +
-                                dist[j_prev][i_value] + dist[i_value][j_next]) -
-                                (dist[i_prev][i_value] + dist[i_value][i_next] +
-                                        dist[j_prev][j_value] + dist[j_value][j_next]);
+                cost += dist[cycle.get(i-1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i+1)] +
+                        dist[cycle.get(j-1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j+1)];
 
                 if (cost < 0) {
-                    Collections.swap(cycle, i, j);
                     return cycle;
+                }
+                else{
+                    Collections.swap(cycle,i,j);
                 }
             }
         }
@@ -157,7 +153,7 @@ class Main {
     static ArrayList<Integer>[] steep_vertex_between_two_exchange(
             double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
         double min_cost = Double.MAX_VALUE;
-        int i_idx_to_switch = -1, j_idx_to_switch = -1;
+        int i_idx_to_switch = -1, j_idx_to_switch = -1, i_val=-1, j_val=-1;
 
         for (int i = 1; i < first_cycle.size() - 1; i++) {
             for (int j = 1; j < second_cycle.size() - 1; j++) {
@@ -180,12 +176,14 @@ class Main {
                     min_cost = cost;
                     i_idx_to_switch = i;
                     j_idx_to_switch = j;
+                    j_val = j_value;
+                    i_val= i_value;
                 }
             }
         }
         if (min_cost != Double.MAX_VALUE) {
-            first_cycle.set(i_idx_to_switch, second_cycle.get(j_idx_to_switch));
-            second_cycle.set(j_idx_to_switch, first_cycle.get(i_idx_to_switch));
+            first_cycle.set(i_idx_to_switch, j_val);
+            second_cycle.set(j_idx_to_switch,i_val);
         }
         return new ArrayList[]{first_cycle, second_cycle};
     }
@@ -198,19 +196,15 @@ class Main {
                 if (i == j)
                     continue;
 
-                int i_prev = cycle.get(i - 1);
-                int i_value = cycle.get(i);
-                int i_next = cycle.get(i + 1);
+                double cost = -(dist[cycle.get(i-1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i+1)] +
+                        dist[cycle.get(j-1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j+1)]);
 
-                int j_prev = cycle.get(j - 1);
-                int j_value = cycle.get(j);
-                int j_next = cycle.get(j + 1);
+                Collections.swap(cycle,i,j);
 
-                double cost =
-                        (dist[i_prev][j_value] + dist[j_value][i_next] +
-                                dist[j_prev][i_value] + dist[i_value][j_next]) -
-                                (dist[i_prev][i_value] + dist[i_value][i_next] +
-                                        dist[j_prev][j_value] + dist[j_value][j_next]);
+                cost += dist[cycle.get(i-1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i+1)] +
+                        dist[cycle.get(j-1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j+1)];
+
+                Collections.swap(cycle,i,j);
 
                 if (cost < 0 && min_cost > cost) {
                     min_cost = cost;
@@ -302,16 +296,16 @@ class Main {
         Random rand = new Random();
         while (first_cycle.size() < 50) {
             int idx = rand.nextInt(not_used.size());
-            first_cycle.add(idx);
-            not_used.remove(idx);
+            first_cycle.add(not_used.get(idx));
+            var b = not_used.remove(idx);
         }
         first_cycle.add(first_id);
         while (second_cycle.size() < 50) {
             int idx = rand.nextInt(not_used.size());
-            second_cycle.add(idx);
+            second_cycle.add(not_used.get(idx));
             not_used.remove(idx);
         }
-        second_cycle.add(first_id);
+        second_cycle.add(second_id);
         return new ArrayList[]{first_cycle, second_cycle};
     }
 
@@ -329,6 +323,12 @@ class Main {
             cycles = generate_random_cycles(first_id, second_id);
         else
             cycles = generate_greedy_cycles(distances, first_id, second_id);
+
+        //count_result(distances, cycles, args);
+        cycles[0].forEach(i-> System.out.print(i+" "));
+        System.out.println();
+        cycles[1].forEach(i-> System.out.print(i+ " "));
+        System.out.println();
 
         for (int i = 0; i < 300; i++) {
             if (args[1].equals("steep")) {
@@ -357,5 +357,8 @@ class Main {
             }
         }
         count_result(distances, cycles, args);
+        cycles[0].forEach(i-> System.out.print(i+" "));
+        System.out.println();
+        cycles[1].forEach(i-> System.out.print(i+ " "));
     }
 }
