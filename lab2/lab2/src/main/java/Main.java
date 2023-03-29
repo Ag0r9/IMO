@@ -102,19 +102,18 @@ class Main {
                 if (i == j)
                     continue;
 
-                double cost = -(dist[cycle.get(i-1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i+1)] +
-                        dist[cycle.get(j-1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j+1)]);
+                double cost = -(dist[cycle.get(i - 1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i + 1)] +
+                        dist[cycle.get(j - 1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j + 1)]);
 
-                Collections.swap(cycle,i,j);
+                Collections.swap(cycle, i, j);
 
-                cost += dist[cycle.get(i-1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i+1)] +
-                        dist[cycle.get(j-1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j+1)];
+                cost += dist[cycle.get(i - 1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i + 1)] +
+                        dist[cycle.get(j - 1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j + 1)];
 
                 if (cost < 0) {
                     return cycle;
-                }
-                else{
-                    Collections.swap(cycle,i,j);
+                } else {
+                    Collections.swap(cycle, i, j);
                 }
             }
         }
@@ -143,6 +142,7 @@ class Main {
                 if (cost < 0) {
                     first_cycle.set(i, j_value);
                     second_cycle.set(j, i_value);
+
                     return new ArrayList[]{first_cycle, second_cycle};
                 }
             }
@@ -153,7 +153,7 @@ class Main {
     static ArrayList<Integer>[] steep_vertex_between_two_exchange(
             double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
         double min_cost = Double.MAX_VALUE;
-        int i_idx_to_switch = -1, j_idx_to_switch = -1, i_val=-1, j_val=-1;
+        int i_idx_to_switch = -1, j_idx_to_switch = -1, i_val = -1, j_val = -1;
 
         for (int i = 1; i < first_cycle.size() - 1; i++) {
             for (int j = 1; j < second_cycle.size() - 1; j++) {
@@ -177,13 +177,13 @@ class Main {
                     i_idx_to_switch = i;
                     j_idx_to_switch = j;
                     j_val = j_value;
-                    i_val= i_value;
+                    i_val = i_value;
                 }
             }
         }
         if (min_cost != Double.MAX_VALUE) {
             first_cycle.set(i_idx_to_switch, j_val);
-            second_cycle.set(j_idx_to_switch,i_val);
+            second_cycle.set(j_idx_to_switch, i_val);
         }
         return new ArrayList[]{first_cycle, second_cycle};
     }
@@ -196,15 +196,15 @@ class Main {
                 if (i == j)
                     continue;
 
-                double cost = -(dist[cycle.get(i-1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i+1)] +
-                        dist[cycle.get(j-1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j+1)]);
+                double cost = -(dist[cycle.get(i - 1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i + 1)] +
+                        dist[cycle.get(j - 1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j + 1)]);
 
-                Collections.swap(cycle,i,j);
+                Collections.swap(cycle, i, j);
 
-                cost += dist[cycle.get(i-1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i+1)] +
-                        dist[cycle.get(j-1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j+1)];
+                cost += dist[cycle.get(i - 1)][cycle.get(i)] + dist[cycle.get(i)][cycle.get(i + 1)] +
+                        dist[cycle.get(j - 1)][cycle.get(j)] + dist[cycle.get(j)][cycle.get(j + 1)];
 
-                Collections.swap(cycle,i,j);
+                Collections.swap(cycle, i, j);
 
                 if (cost < 0 && min_cost > cost) {
                     min_cost = cost;
@@ -270,7 +270,7 @@ class Main {
         return first_cycle;
     }
 
-    static void count_result(double distances[][], ArrayList<Integer>[] cycles, String[] type) {
+    static void print_result(double distances[][], ArrayList<Integer>[] cycles, String[] type) {
         double total_dist = 0.0;
         for (int cycle_no = 0; cycle_no < cycles.length; cycle_no++) {
             for (int node_no = 0; node_no < cycles[cycle_no].size() - 1; node_no++) {
@@ -282,6 +282,15 @@ class Main {
             args += (s + " ");
         }
         System.out.println(args + total_dist);
+    }
+
+    static double get_result(double distances[][], ArrayList<Integer> cycle) {
+        double total_dist = 0.0;
+        for (int node_no = 0; node_no < cycle.size() - 1; node_no++) {
+            total_dist += distances[cycle.get(node_no)][cycle.get(node_no + 1)];
+        }
+
+        return total_dist;
     }
 
     static ArrayList<Integer>[] generate_random_cycles(int first_id, int second_id) {
@@ -325,10 +334,10 @@ class Main {
             cycles = generate_greedy_cycles(distances, first_id, second_id);
 
         //count_result(distances, cycles, args);
-        cycles[0].forEach(i-> System.out.print(i+" "));
-        System.out.println();
-        cycles[1].forEach(i-> System.out.print(i+ " "));
-        System.out.println();
+//        cycles[0].forEach(i-> System.out.print(i+" "));
+//        System.out.println();
+//        cycles[1].forEach(i-> System.out.print(i+ " "));
+//        System.out.println();
 
         for (int i = 0; i < 300; i++) {
             if (args[1].equals("steep")) {
@@ -354,9 +363,30 @@ class Main {
                 }
             } else {
                 int operation = rand.nextInt(3);
+                if (operation == 1) {//exchange vertex between
+                    int id_in_1_cycle = rand.nextInt(49) + 1, val_1 = cycles[0].get(id_in_1_cycle);
+                    int id_in_2_cycle = rand.nextInt(49) + 1, val_2 = cycles[1].get(id_in_2_cycle);
+                    cycles[0].set(id_in_1_cycle, val_2);
+                    cycles[1].set(id_in_2_cycle, val_1);
+                }
+                else if (operation == 2) {//exchange vertex inside
+                    int cycle_no = rand.nextInt(2);
+                    int id_2, id_1 = rand.nextInt(49) + 1;
+                    do {
+                        id_2 = rand.nextInt(49) + 1;
+                    } while (id_1 == id_2);
+                    Collections.swap(cycles[cycle_no], id_1, id_2);
+                }
+                else {//exchange edges inside
+                    int cycle_no = rand.nextInt(2);
+                    int l_bound = rand.nextInt(49) + 1;
+                    int r_bound = rand.nextInt(49 - l_bound+1) + l_bound+1;
+
+                    Collections.reverse(cycles[cycle_no].subList(l_bound, r_bound));
+                }
             }
         }
-        count_result(distances, cycles, args);
+        print_result(distances, cycles, args);
         cycles[0].forEach(i-> System.out.print(i+" "));
         System.out.println();
         cycles[1].forEach(i-> System.out.print(i+ " "));
