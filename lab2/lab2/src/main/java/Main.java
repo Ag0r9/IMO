@@ -317,6 +317,29 @@ class Main {
         second_cycle.add(second_id);
         return new ArrayList[]{first_cycle, second_cycle};
     }
+    static void random_walk(ArrayList<Integer>cycles[]){
+        Random rand = new Random();
+        int operation = rand.nextInt(3);
+        if (operation == 1) {//exchange vertex between
+            int id_in_1_cycle = rand.nextInt(49) + 1, val_1 = cycles[0].get(id_in_1_cycle);
+            int id_in_2_cycle = rand.nextInt(49) + 1, val_2 = cycles[1].get(id_in_2_cycle);
+            cycles[0].set(id_in_1_cycle, val_2);
+            cycles[1].set(id_in_2_cycle, val_1);
+        } else if (operation == 2) {//exchange vertex inside
+            int cycle_no = rand.nextInt(2);
+            int id_2, id_1 = rand.nextInt(49) + 1;
+            do {
+                id_2 = rand.nextInt(49) + 1;
+            } while (id_1 == id_2);
+            Collections.swap(cycles[cycle_no], id_1, id_2);
+        } else {//exchange edges inside
+            int cycle_no = rand.nextInt(2);
+            int l_bound = rand.nextInt(49) + 1;
+            int r_bound = rand.nextInt(49 - l_bound + 1) + l_bound + 1;
+
+            Collections.reverse(cycles[cycle_no].subList(l_bound, r_bound));
+        }
+    }
 
     public static void main(String[] args) throws IOException {
         Node[] nodes = new Node[100];
@@ -338,8 +361,11 @@ class Main {
                 cycles = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
 
                 if (args[2].equals("edges")) {
+                    get_result(distances,cycles[0]);
                     cycles[0] = steep_edge_exchange(distances, cycles[0]);
                     cycles[1] = steep_edge_exchange(distances, cycles[1]);
+
+
                 } else {
                     cycles[0] = steep_vertex_inside_one_exchange(distances, cycles[0]);
                     cycles[1] = steep_vertex_inside_one_exchange(distances, cycles[1]);
@@ -356,26 +382,7 @@ class Main {
                     cycles[1] = greedy_vertex_inside_one_exchange(distances, cycles[1]);
                 }
             } else {
-                int operation = rand.nextInt(3);
-                if (operation == 1) {//exchange vertex between
-                    int id_in_1_cycle = rand.nextInt(49) + 1, val_1 = cycles[0].get(id_in_1_cycle);
-                    int id_in_2_cycle = rand.nextInt(49) + 1, val_2 = cycles[1].get(id_in_2_cycle);
-                    cycles[0].set(id_in_1_cycle, val_2);
-                    cycles[1].set(id_in_2_cycle, val_1);
-                } else if (operation == 2) {//exchange vertex inside
-                    int cycle_no = rand.nextInt(2);
-                    int id_2, id_1 = rand.nextInt(49) + 1;
-                    do {
-                        id_2 = rand.nextInt(49) + 1;
-                    } while (id_1 == id_2);
-                    Collections.swap(cycles[cycle_no], id_1, id_2);
-                } else {//exchange edges inside
-                    int cycle_no = rand.nextInt(2);
-                    int l_bound = rand.nextInt(49) + 1;
-                    int r_bound = rand.nextInt(49 - l_bound + 1) + l_bound + 1;
-
-                    Collections.reverse(cycles[cycle_no].subList(l_bound, r_bound));
-                }
+                random_walk(cycles);
             }
         }
         print_result(distances, cycles, args);
