@@ -4,6 +4,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class Main {
+
     static class Node {
         Node(int x, int y) {
             this.x = x;
@@ -306,7 +307,7 @@ class Main {
         while (first_cycle.size() < 50) {
             int idx = rand.nextInt(not_used.size());
             first_cycle.add(not_used.get(idx));
-            var b = not_used.remove(idx);
+            not_used.remove(idx);
         }
         first_cycle.add(first_id);
         while (second_cycle.size() < 50) {
@@ -317,7 +318,8 @@ class Main {
         second_cycle.add(second_id);
         return new ArrayList[]{first_cycle, second_cycle};
     }
-    static void random_walk(ArrayList<Integer>cycles[]){
+
+    static void random_walk(ArrayList<Integer> cycles[]) {
         Random rand = new Random();
         int operation = rand.nextInt(3);
         if (operation == 1) {//exchange vertex between
@@ -356,15 +358,13 @@ class Main {
         else
             cycles = generate_greedy_cycles(distances, first_id, second_id);
 
-        for (int i = 0; i < 300; i++) {//DOSTOSUJ LICZBE ITERACJI #TODO SPRAWDZ TO
+        for (int i = 0; i < 250; i++) {
             if (args[1].equals("steep")) {
                 cycles = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
 
                 if (args[2].equals("edges")) {
-                    get_result(distances,cycles[0]);
                     cycles[0] = steep_edge_exchange(distances, cycles[0]);
                     cycles[1] = steep_edge_exchange(distances, cycles[1]);
-
 
                 } else {
                     cycles[0] = steep_vertex_inside_one_exchange(distances, cycles[0]);
@@ -374,9 +374,10 @@ class Main {
             } else if (args[1].equals("greedy")) {
                 cycles = greedy_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
 
-                if (args[2] == "edges") {
+                if (args[2].equals( "edges")) {
                     cycles[0] = greedy_edge_exchange(distances, cycles[0]);
                     cycles[1] = greedy_edge_exchange(distances, cycles[1]);
+
                 } else {
                     cycles[0] = greedy_vertex_inside_one_exchange(distances, cycles[0]);
                     cycles[1] = greedy_vertex_inside_one_exchange(distances, cycles[1]);
