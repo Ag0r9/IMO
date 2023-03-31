@@ -333,13 +333,7 @@ class Main {
         else
             cycles = generate_greedy_cycles(distances, first_id, second_id);
 
-        //count_result(distances, cycles, args);
-//        cycles[0].forEach(i-> System.out.print(i+" "));
-//        System.out.println();
-//        cycles[1].forEach(i-> System.out.print(i+ " "));
-//        System.out.println();
-
-        for (int i = 0; i < 300; i++) {
+        for (int i = 0; i < 300; i++) {//DOSTOSUJ LICZBE ITERACJI #TODO SPRAWDZ TO
             if (args[1].equals("steep")) {
                 cycles = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
 
@@ -368,27 +362,25 @@ class Main {
                     int id_in_2_cycle = rand.nextInt(49) + 1, val_2 = cycles[1].get(id_in_2_cycle);
                     cycles[0].set(id_in_1_cycle, val_2);
                     cycles[1].set(id_in_2_cycle, val_1);
-                }
-                else if (operation == 2) {//exchange vertex inside
+                } else if (operation == 2) {//exchange vertex inside
                     int cycle_no = rand.nextInt(2);
                     int id_2, id_1 = rand.nextInt(49) + 1;
                     do {
                         id_2 = rand.nextInt(49) + 1;
                     } while (id_1 == id_2);
                     Collections.swap(cycles[cycle_no], id_1, id_2);
-                }
-                else {//exchange edges inside
+                } else {//exchange edges inside
                     int cycle_no = rand.nextInt(2);
                     int l_bound = rand.nextInt(49) + 1;
-                    int r_bound = rand.nextInt(49 - l_bound+1) + l_bound+1;
+                    int r_bound = rand.nextInt(49 - l_bound + 1) + l_bound + 1;
 
                     Collections.reverse(cycles[cycle_no].subList(l_bound, r_bound));
                 }
             }
         }
         print_result(distances, cycles, args);
-        cycles[0].forEach(i-> System.out.print(i+" "));
+        cycles[0].forEach(i -> System.out.print(i + " "));
         System.out.println();
-        cycles[1].forEach(i-> System.out.print(i+ " "));
+        cycles[1].forEach(i -> System.out.print(i + " "));
     }
 }
