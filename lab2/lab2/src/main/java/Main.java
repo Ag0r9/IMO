@@ -2,6 +2,7 @@ import java.util.*;
 import java.io.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 class Main {
 
@@ -97,9 +98,11 @@ class Main {
         return second_id;
     }
 
+
     static ArrayList<Integer> greedy_vertex_inside_one_exchange(double[][] dist, ArrayList<Integer> cycle) {
-        for (int i = 1; i < cycle.size() - 1; i++) {
-            for (int j = 1; j < cycle.size() - 1; j++) {
+        List <Integer> indexes = get_random_order();
+        for (int i : indexes) {
+            for (int j: indexes) {
                 if (i == j)
                     continue;
 
@@ -123,8 +126,9 @@ class Main {
 
     static ArrayList<Integer>[] greedy_vertex_between_two_exchange(
             double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
-        for (int i = 1; i < first_cycle.size() - 1; i++) {
-            for (int j = 1; j < second_cycle.size() - 1; j++) {
+        List <Integer> indexes = get_random_order();
+        for (int i : indexes) {
+            for (int j : indexes) {
 
                 int i_prev = first_cycle.get(i - 1);
                 int i_value = first_cycle.get(i);
@@ -221,9 +225,10 @@ class Main {
     }
 
     static ArrayList<Integer> greedy_edge_exchange(double[][] dist, ArrayList<Integer> first_cycle) {
-        for (int i = 0; i < first_cycle.size() - 1; i++) {
-            for (int j = 0; j < first_cycle.size() - 1; j++) {
-                if (Math.abs(i - j) < 3)
+        List <Integer> indexes = get_random_order();
+        for (int i : indexes) {
+            for (int j : indexes) {
+                if (Math.abs(i - j) < 3 || i > j)
                     continue;
 
                 int i_value = first_cycle.get(i);
@@ -342,7 +347,14 @@ class Main {
             Collections.reverse(cycles[cycle_no].subList(l_bound, r_bound));
         }
     }
-
+    static List <Integer> get_random_order(){
+        Random rand = new Random();
+        List <Integer> indexes = IntStream.range(1, 50).boxed().collect(Collectors.toList());
+        for(int i=0; i<indexes.size();i++){
+            Collections.swap(indexes, i, rand.nextInt(indexes.size()));
+        }
+        return indexes;
+    }
     public static void main(String[] args) throws IOException {
         Node[] nodes = new Node[100];
         load_data(nodes, "kroA100.tsp");
