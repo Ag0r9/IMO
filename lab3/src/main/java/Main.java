@@ -1,8 +1,5 @@
 import java.util.*;
 import java.io.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 class Main {
 
@@ -16,13 +13,41 @@ class Main {
         int y;
     }
 
+    static class Operation implements Comparable {
+        Operation(String type, int from, int to, double evaluation) {
+            this.type = type;
+            this.from = from;
+            this.to = to;
+            this.evaluation = evaluation;
+            if (type.equals("vertex")) {
+                this.from_next = -1;
+                this.to_next = -1;
+            } else {
+                this.from_next = from + 1;
+                this.to_next = to + 1;
+            }
+        }
+
+        String type;
+        double evaluation;
+        int from;
+        int from_next;//
+        int to;
+        int to_next;
+
+        @Override
+        public int compareTo(Object o) {
+            return Double.compare(this.evaluation, ((Operation) o).evaluation);
+        }
+    }
+
     static void load_data(Node[] data, String filename) throws IOException {
         Scanner sc = new Scanner(Main.class.getClassLoader().getResource(filename).openStream());
 
         for (int i = 0; i < 6; i++)
             sc.nextLine();
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 200; i++) {
             sc.next();
             int x = Integer.parseInt(sc.next());
             int y = Integer.parseInt(sc.next());
@@ -32,15 +57,33 @@ class Main {
     }
 
     static double[][] calculate_distance(Node[] nodes) {
-        double[][] dist = new double[100][100];
-        for (int i = 0; i < 100; i++) {
-            for (int j = 0; j < 100; j++) {
+        double[][] dist = new double[200][200];
+        for (int i = 0; i < 200; i++) {
+            for (int j = 0; j < 200; j++) {
                 double dx = nodes[i].x - nodes[j].x;
                 double dy = nodes[i].y - nodes[j].y;
                 dist[i][j] = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
             }
         }
         return dist;
+    }
+
+    static int[][] closest_vertexes(double[][] dist) {
+        int[][] closest = new int[200][10];
+        Map<Integer, Double> min_distances = new HashMap();
+        for (int node = 0; node < 200; node++) {
+            min_distances.clear();
+            for (int sec_node = 0; sec_node < 200; sec_node++) {
+                min_distances.put(node, dist[node][sec_node]);
+            }
+
+            List<Map.Entry<Integer, Double>> sortedDistances = new ArrayList<>(min_distances.entrySet());
+            Collections.sort(sortedDistances, Map.Entry.comparingByValue());
+            for (int i = 0; i < 10 && i < sortedDistances.size(); i++) {
+                closest[node][i] = sortedDistances.get(i).getKey();
+            }
+        }
+        return closest;
     }
 
     static void cycle_creation(double[][] dist, ArrayList<Integer> not_used, ArrayList<Integer> solution) {
@@ -63,7 +106,7 @@ class Main {
 
     static ArrayList<Integer>[] generate_greedy_cycles(double[][] dist, int first_start, int second_start) {
         ArrayList<Integer> not_used = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 200; i++) {
             if (i != first_start && i != second_start)
                 not_used.add(i);
         }
@@ -89,7 +132,7 @@ class Main {
     static int find_second_starting_node(int first_id, double[][] distances) {
         int second_id = -1;
         double max_dist = 0.0;
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 200; i++) {
             if (distances[i][first_id] > max_dist) {
                 second_id = i;
                 max_dist = distances[i][first_id];
@@ -97,10 +140,17 @@ class Main {
         }
         return second_id;
     }
-    static ArrayList<Integer>[] steep_vertex_between_two_exchange(
-            double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle) {
-        double min_cost = Double.MAX_VALUE;
-        int i_idx_to_switch = -1, j_idx_to_switch = -1, i_val = -1, j_val = -1;
+
+    static List<Operation> remove_not_applicable(List<Operation> candidate_moves) {
+        for (Operation move: candidate_moves){
+
+        }
+
+        return candidate_moves;
+    }
+
+    static List<Operation> steep_vertex_between_two_exchange(
+            double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle, List<Operation> candidate_moves) {
 
         for (int i = 1; i < first_cycle.size() - 1; i++) {
             for (int j = 1; j < second_cycle.size() - 1; j++) {
@@ -119,49 +169,61 @@ class Main {
                                 (dist[i_prev][i_value] + dist[i_value][i_next] +
                                         dist[j_prev][j_value] + dist[j_value][j_next]);
 
-                if (cost < 0 && min_cost > cost) {
-                    min_cost = cost;
-                    i_idx_to_switch = i;
-                    j_idx_to_switch = j;
-                    j_val = j_value;
-                    i_val = i_value;
+                if (cost < 0) {
+                    candidate_moves.add(new Operation("vertex", i, j, -cost));
                 }
             }
         }
-        if (min_cost != Double.MAX_VALUE) {
-            first_cycle.set(i_idx_to_switch, j_val);
-            second_cycle.set(j_idx_to_switch, i_val);
-        }
-        return new ArrayList[]{first_cycle, second_cycle};
+        return candidate_moves;
     }
 
-    static ArrayList<Integer> steep_edge_exchange(double[][] dist, ArrayList<Integer> first_cycle) {
-        double min_cost = Double.MAX_VALUE;
-        int i_idx_to_reverse = -1, j_idx_to_reverse = -1;
-
-        for (int i = 0; i < first_cycle.size() - 1; i++) {
-            for (int j = 0; j < first_cycle.size() - 1; j++) {
-                if (Math.abs(i - j) < 3)
+    static List<Operation> steep_edge_exchange(double[][] dist, ArrayList<Integer> cycle, List<Operation> candidate_moves) {
+        for (int i = 0; i < cycle.size() - 1; i++) {
+            for (int j = 0; j < cycle.size() - 1; j++) {
+                if (Math.abs(i - j) < 2)
                     continue;
 
-                int i_value = first_cycle.get(i);
-                int i_next = first_cycle.get(i + 1);
-
-                int j_value = first_cycle.get(j);
-                int j_next = first_cycle.get(j + 1);
+                int i_value = cycle.get(i);
+                int i_next = cycle.get(i + 1);
+                int j_value = cycle.get(j);
+                int j_next = cycle.get(j + 1);
 
                 double cost = (dist[i_value][j_value] + dist[i_next][j_next]) - (dist[i_value][i_next] + dist[j_value][j_next]);
-                if (cost < 0 && min_cost > cost) {
-                    min_cost = cost;
-                    i_idx_to_reverse = i + 1;
-                    j_idx_to_reverse = j + 1;
+
+                if (cost < 0) {
+                    candidate_moves.add(new Operation("edge", i, j, -cost));
                 }
             }
         }
-        if (min_cost != Double.MAX_VALUE)
-            Collections.reverse(first_cycle.subList(i_idx_to_reverse, j_idx_to_reverse));
+        return candidate_moves;
+    }
 
-        return first_cycle;
+    private static List<Operation> make_best_move(List<Operation> candidate_moves, ArrayList<Integer>[] cycles) {
+        Operation move = candidate_moves.get(0);
+        var from_in_first = cycles[0].indexOf(move.from);
+        var from_in_second = cycles[1].indexOf(move.from);
+        var to_in_first = cycles[0].indexOf(move.to);
+        var to_in_second = cycles[1].indexOf(move.to);
+        if (move.type.equals("vertex")) {
+            if (from_in_first != -1 && to_in_second != -1) {
+                cycles[0].set(from_in_first, move.to);
+                cycles[1].set(to_in_second, move.from);
+
+            } else if (from_in_second != -1 && to_in_first != -1) {
+                cycles[1].set(from_in_second, move.to);
+                cycles[0].set(to_in_first, move.from);
+            }
+
+        } else if (move.type.equals("edge")) {
+            boolean first = cycles[0].containsAll(Arrays.asList(move.from, move.from_next, move.to, move.to_next));
+            if (first) {
+                Collections.reverse(cycles[0].subList(from_in_first + 1, to_in_first + 1));
+            } else {
+                Collections.reverse(cycles[1].subList(from_in_second + 1, to_in_second + 1));
+            }
+        }
+        candidate_moves.remove(move);
+        return candidate_moves;
     }
 
     static void print_result(double distances[][], ArrayList<Integer>[] cycles, String[] type) {
@@ -188,21 +250,31 @@ class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        Node[] nodes = new Node[100];
-        load_data(nodes, "kroA100.tsp");
+        Node[] nodes = new Node[200];
+        load_data(nodes, "kroA200.tsp");
         double[][] distances = calculate_distance(nodes);
 
         Random rand = new Random();
-        int first_id = rand.nextInt(100);
+        int first_id = rand.nextInt(200);
         int second_id = find_second_starting_node(first_id, distances);
         ArrayList<Integer> cycles[];
 
         cycles = generate_greedy_cycles(distances, first_id, second_id);
+        List<Operation> candidate_moves = new ArrayList<>();
 
-        for (int i = 0; i < 250; i++) {
-                cycles = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
-                cycles[0] = steep_edge_exchange(distances, cycles[0]);
-                cycles[1] = steep_edge_exchange(distances, cycles[1]);
+        while (true) {
+            candidate_moves = remove_not_applicable(candidate_moves);
+
+            candidate_moves = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1], candidate_moves);
+            candidate_moves = steep_edge_exchange(distances, cycles[0], candidate_moves);
+            candidate_moves = steep_edge_exchange(distances, cycles[1], candidate_moves);
+            Collections.sort(candidate_moves, Operation::compareTo);
+            if (candidate_moves.isEmpty())
+                break;
+            else {
+                candidate_moves = make_best_move(candidate_moves, cycles);
+            }
+
         }
 
         print_result(distances, cycles, args);
