@@ -1,5 +1,7 @@
 import java.util.*;
 import java.io.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class Main {
     static int size = 100;
@@ -314,6 +316,31 @@ class Main {
         return cycles;
     }
 
+    static ArrayList<Integer>[] generate_random_cycles(int first_id, int second_id) {
+        List<Integer> not_used = IntStream.range(0, 100).filter(i -> i != first_id && i != second_id).boxed().collect(Collectors.toList());
+        ArrayList<Integer> first_cycle = new ArrayList<>() {{
+            add(first_id);
+        }};
+        ArrayList<Integer> second_cycle = new ArrayList<>() {{
+            add(second_id);
+        }};
+
+        Random rand = new Random();
+        while (first_cycle.size() < 50) {
+            int idx = rand.nextInt(not_used.size());
+            first_cycle.add(not_used.get(idx));
+            not_used.remove(idx);
+        }
+        first_cycle.add(first_id);
+        while (second_cycle.size() < 50) {
+            int idx = rand.nextInt(not_used.size());
+            second_cycle.add(not_used.get(idx));
+            not_used.remove(idx);
+        }
+        second_cycle.add(second_id);
+        return new ArrayList[]{first_cycle, second_cycle};
+    }
+
     public static void main(String[] args) throws IOException {
         Node[] nodes = new Node[size];
         load_data(nodes, "kroA100.tsp");
@@ -322,12 +349,11 @@ class Main {
         Random rand = new Random();
         int first_id = rand.nextInt(size);
         int second_id = find_second_starting_node(first_id, distances);
-        ArrayList<Integer> cycles[];
 
-        cycles = generate_greedy_cycles(distances, first_id, second_id);
+        ArrayList<Integer> cycles[] = generate_random_cycles(first_id, second_id);
 
         cycles = list_of_moves(distances, cycles);
-        cycles = nearest_vertex(distances, cycles);
+        //cycles = nearest_vertex(distances, cycles);
         print_result(distances, cycles, args);
         cycles[0].forEach(i -> System.out.print(i + " "));
         System.out.println();
