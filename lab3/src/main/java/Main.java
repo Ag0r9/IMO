@@ -46,6 +46,18 @@ class Main {
         public int compareTo(Object o) {
             return Double.compare(this.evaluation, ((Operation) o).evaluation);
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            var o = (Operation) obj;
+            if (this.type.equals(o.type) && this.evaluation == o.evaluation &&
+                    this.to_next == o.to_next && this.from_next == o.from_next &&
+                    this.from == o.from && this.to == o.to) {
+                return  true;
+            }
+            else
+                return false;
+        }
     }
 
     static void load_data(Node[] data, String filename) throws IOException {
@@ -111,31 +123,6 @@ class Main {
         not_used.remove(Integer.valueOf(min_id));
     }
 
-    static ArrayList<Integer>[] generate_greedy_cycles(double[][] dist, int first_start, int second_start) {
-        ArrayList<Integer> not_used = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            if (i != first_start && i != second_start)
-                not_used.add(i);
-        }
-        ArrayList<Integer> solution1 = new ArrayList<>() {{
-            add(first_start);
-            add(first_start);
-        }};
-        ArrayList<Integer> solution2 = new ArrayList<>() {{
-            add(second_start);
-            add(second_start);
-        }};
-
-        while (solution1.size() < 51)
-            cycle_creation(dist, not_used, solution1);
-
-        while (solution2.size() < 51)
-            cycle_creation(dist, not_used, solution2);
-
-        ArrayList<Integer> x[] = new ArrayList[]{solution1, solution2};
-        return x;
-    }
-
     static int find_second_starting_node(int first_id, double[][] distances) {
         int second_id = -1;
         double max_dist = 0.0;
@@ -198,8 +185,8 @@ class Main {
                                 (dist[i_prev][i_value] + dist[i_value][i_next] +
                                         dist[j_prev][j_value] + dist[j_value][j_next]);
 
-                if (cost < 0) {
-                    candidate_moves.add(new Operation("vertex", i, j, cost));
+                if (cost < 0 && !candidate_moves.contains(new Operation("vertex", i_value, j_value, cost))) {
+                    candidate_moves.add(new Operation("vertex", i_value, j_value, cost));
                 }
             }
         }
@@ -219,7 +206,7 @@ class Main {
 
                 double cost = (dist[i_value][j_value] + dist[i_next][j_next]) - (dist[i_value][i_next] + dist[j_value][j_next]);
 
-                if (cost < 0) {
+                if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost))) {
                     candidate_moves.add(new Operation("edge", i_value, i_next, j_value, j_next, cost));
                 }
             }
@@ -295,6 +282,13 @@ class Main {
             candidate_moves = steep_edge_exchange(distances, cycles[1], candidate_moves);
 
             Collections.sort(candidate_moves, Operation::compareTo);
+
+            Set<Operation> mySet = new LinkedHashSet<>(candidate_moves);
+            candidate_moves.clear();
+            candidate_moves.addAll(mySet);
+
+
+
             if (candidate_moves.isEmpty())
                 break;
             else {
@@ -317,7 +311,7 @@ class Main {
     }
 
     static ArrayList<Integer>[] generate_random_cycles(int first_id, int second_id) {
-        List<Integer> not_used = IntStream.range(0, 100).filter(i -> i != first_id && i != second_id).boxed().collect(Collectors.toList());
+        List<Integer> not_used = IntStream.range(0, size).filter(i -> i != first_id && i != second_id).boxed().collect(Collectors.toList());
         ArrayList<Integer> first_cycle = new ArrayList<>() {{
             add(first_id);
         }};
@@ -326,13 +320,13 @@ class Main {
         }};
 
         Random rand = new Random();
-        while (first_cycle.size() < 50) {
+        while (first_cycle.size() < size / 2) {
             int idx = rand.nextInt(not_used.size());
             first_cycle.add(not_used.get(idx));
             not_used.remove(idx);
         }
         first_cycle.add(first_id);
-        while (second_cycle.size() < 50) {
+        while (second_cycle.size() < size / 2) {
             int idx = rand.nextInt(not_used.size());
             second_cycle.add(not_used.get(idx));
             not_used.remove(idx);
