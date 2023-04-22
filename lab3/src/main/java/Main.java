@@ -17,22 +17,24 @@ class Main {
     }
 
     static class Operation implements Comparable {
-        Operation(String type, int from, int to, double evaluation) {
+        Operation(String type, int from, int to, double evaluation, boolean valid) {
             this.type = type;
             this.from = from;
             this.to = to;
             this.evaluation = evaluation;
             this.from_next = -1;
             this.to_next = -1;
+            this.valid = valid;
         }
 
-        Operation(String type, int from, int from_next, int to, int to_next, double evaluation) {
+        Operation(String type, int from, int from_next, int to, int to_next, double evaluation, boolean valid) {
             this.type = type;
             this.from = from;
             this.from_next = from_next;
             this.to = to;
             this.to_next = to_next;
             this.evaluation = evaluation;
+            this.valid = valid;
         }
 
         String type;
@@ -41,6 +43,8 @@ class Main {
         int from_next;
         int to;
         int to_next;
+
+        boolean valid;
 
         @Override
         public int compareTo(Object o) {
@@ -115,7 +119,7 @@ class Main {
         return second_id;
     }
 
-    static List<Operation> remove_not_applicable(List<Operation> candidate_moves, List<Integer> ids_to_update) {
+    static List<Operation> remove_not_applicable(List<Operation> candidate_moves, List<Integer> ids_to_update, ArrayList<Integer>[] cycles) {
         Set<Operation> moves_to_remove = new HashSet<>();
         for (int id : ids_to_update) {
             for (Operation move : candidate_moves) {
@@ -124,6 +128,19 @@ class Main {
             }
         }
         candidate_moves.removeAll(moves_to_remove);
+
+        /*for (Operation move : candidate_moves) {
+            if (move.type.equals("vertex"))
+                continue;
+
+            if (cycles[0].contains(move.from)) {
+                if (cycles[0].indexOf(move.from) + 1 == cycles[0].indexOf(move.from_next)
+                        && cycles[0].indexOf(move.to) == cycles[0].indexOf(move.to_next) + 1)
+            } else {
+
+            }
+        }*/
+
         return candidate_moves;
     }
 
@@ -147,8 +164,8 @@ class Main {
                                 (dist[i_prev][i_value] + dist[i_value][i_next] +
                                         dist[j_prev][j_value] + dist[j_value][j_next]);
 
-                if (cost < 0 && !candidate_moves.contains(new Operation("vertex", i_value, j_value, cost))) {
-                    candidate_moves.add(new Operation("vertex", i_value, j_value, cost));
+                if (cost < 0 && !candidate_moves.contains(new Operation("vertex", i_value, j_value, cost, true))) {
+                    candidate_moves.add(new Operation("vertex", i_value, j_value, cost, true));
                 }
             }
         }
@@ -168,8 +185,8 @@ class Main {
 
                 double cost = (dist[i_value][j_value] + dist[i_next][j_next]) - (dist[i_value][i_next] + dist[j_value][j_next]);
 
-                if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost))) {
-                    candidate_moves.add(new Operation("edge", i_value, i_next, j_value, j_next, cost));
+                if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost, true))) {
+                    candidate_moves.add(new Operation("edge", i_value, i_next, j_value, j_next, cost, true));
                 }
             }
         }
@@ -267,7 +284,7 @@ class Main {
             ids_to_update.removeAll(Arrays.asList(cycles[0].get(0), cycles[1].get(0)));
             candidate_moves.remove(best_move);
 
-            candidate_moves = remove_not_applicable(candidate_moves, ids_to_update);
+            candidate_moves = remove_not_applicable(candidate_moves, ids_to_update, cycles);
             candidate_moves = add_new_moves(candidate_moves, cycles, ids_to_update, distances);
 
         }
@@ -301,8 +318,8 @@ class Main {
 
             double cost = (dist[i_value][j_value] + dist[i_next][j_next]) - (dist[i_value][i_next] + dist[j_value][j_next]);
 
-            if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost)))
-                candidate_moves.add(new Operation("edge", i_value, i_next, j_value, j_next, cost));
+            if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost, true)))
+                candidate_moves.add(new Operation("edge", i_value, i_next, j_value, j_next, cost, true));
 
         }
 
@@ -326,8 +343,8 @@ class Main {
                             (dist[i_prev][i_value] + dist[i_value][i_next] +
                                     dist[j_prev][j_value] + dist[j_value][j_next]);
 
-            if (cost < 0 && !candidate_moves.contains(new Operation("vertex", i_value, j_value, cost))) {
-                candidate_moves.add(new Operation("vertex", i_value, j_value, cost));
+            if (cost < 0 && !candidate_moves.contains(new Operation("vertex", i_value, j_value, cost, true))) {
+                candidate_moves.add(new Operation("vertex", i_value, j_value, cost, true));
             }
 
         }
