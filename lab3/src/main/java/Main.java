@@ -287,8 +287,8 @@ class Main {
 
 
             Operation best_move = null;
-            for(Operation move: candidate_moves){
-                if(move.valid){
+            for (Operation move : candidate_moves) {
+                if (move.valid) {
                     best_move = move;
                     break;
                 }
@@ -376,18 +376,27 @@ class Main {
         return candidate_moves;
     }
 
-    static ArrayList<Integer>[] nearest_vertex(double[][] distances, ArrayList<Integer>[] cycles) {
+    static ArrayList<Integer>[] nearest_vertex(double[][] dist, ArrayList<Integer>[] cycles) {
         List<Operation> candidate_moves = new ArrayList<>();
-        var nearest = closest_vertexes(distances);
-        for (int node = 0; node < cycles[0].size() - 1; node++) {
+        var nearest = closest_vertexes(dist);
+        for (int node = 1; node < cycles[0].size() - 1; node++) {
 
             for (int i = 0; i < 10; i++) {
+                int node_2left = cycles[0].get(node - 2);
+                int node_1left = cycles[0].get(node - 1);
+                int node_2right = cycles[0].get(node + 2);
+                int node_1right = cycles[0].get(node + 1);
+                int this_node = cycles[0].get(node);
 
+                int node_to_insert_1left = cycles[0].get(cycles[0].indexOf(nearest[this_node][i]) - 1);
+                int node_to_insert = nearest[this_node][i];
+                int node_to_insert_1right = cycles[0].get(cycles[0].indexOf(nearest[this_node][i]) + 1);
+                //wersja: wszystko w cyklu
+                double cost_left = dist[node_2left][this_node] + dist[this_node][node_to_insert] + dist[node_to_insert][node_1right] +
+                        dist[node_to_insert_1left][node_1left] + dist[node_1left][node_to_insert_1right];
             }
         }
-        for (int node = 0; node < cycles[0].size() - 1; node++) {
 
-        }
         return cycles;
     }
 
@@ -427,12 +436,34 @@ class Main {
 
         ArrayList<Integer> cycles[] = generate_random_cycles(first_id, second_id);
 
-        cycles = list_of_moves(distances, cycles);
+        //cycles = list_of_moves(distances, cycles);
         //cycles = nearest_vertex(distances, cycles);
+
+        cycles = steepest(distances, cycles);
+
         print_result(distances, cycles, args);
         cycles[0].forEach(i -> System.out.print(i + " "));
         System.out.println();
         cycles[1].forEach(i -> System.out.print(i + " "));
+    }
+
+    private static ArrayList<Integer>[] steepest(double[][] distances, ArrayList<Integer>[] cycles) {
+
+        List<Operation> candidate_moves = new ArrayList<>();
+        while (true) {
+            candidate_moves.clear();
+            candidate_moves = steep_edge_exchange(distances, cycles[1], candidate_moves);
+            candidate_moves = steep_edge_exchange(distances, cycles[0], candidate_moves);
+            candidate_moves = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1], candidate_moves);
+            if (candidate_moves.isEmpty()) {
+                break;
+            }
+            Collections.sort(candidate_moves, Operation::compareTo);
+            make_best_move(candidate_moves.get(0), cycles);
+        }
+
+
+        return cycles;
     }
 
 
