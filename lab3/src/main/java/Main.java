@@ -4,7 +4,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class Main {
-    static int size = 18;
+    static int size = 10;
 
     static class Node {
         Node(int x, int y) {
@@ -38,7 +38,7 @@ class Main {
         String type;
         double evaluation;
         int from;
-        int from_next;//
+        int from_next;
         int to;
         int to_next;
 
@@ -253,13 +253,17 @@ class Main {
         candidate_moves = steep_edge_exchange(distances, cycles[0], candidate_moves);
         candidate_moves = steep_edge_exchange(distances, cycles[1], candidate_moves);
 
+        System.out.println(get_result(distances, cycles[0]) + get_result(distances, cycles[1]));
+
         while (true) {
-            System.out.println(get_result(distances, cycles[0]) + get_result(distances, cycles[1]));
             Collections.sort(candidate_moves, Operation::compareTo);
             if (candidate_moves.isEmpty())
                 break;
             Operation best_move = candidate_moves.get(0);
             make_best_move(best_move, cycles);
+
+            System.out.print(get_result(distances, cycles[0]) + get_result(distances, cycles[1]));
+            System.out.println(" "+best_move.type);
             List<Integer> ids_to_update = new ArrayList<>() {{
                 addAll(Arrays.asList(best_move.from, best_move.to));
             }};
@@ -269,9 +273,76 @@ class Main {
             candidate_moves.remove(best_move);
 
             candidate_moves = remove_not_applicable(candidate_moves, ids_to_update);
+            candidate_moves = add_new_moves(candidate_moves, cycles, ids_to_update, distances);
 
         }
         return cycles;
+    }
+
+
+    private static List<Operation> add_new_moves(List<Operation> candidate_moves, ArrayList<Integer>[] cycles, List<Integer> ids_to_update, double[][] dist) {
+        for (int id : ids_to_update) {
+            ArrayList<Integer> cycle_with_id = cycles[0].contains(id) ? cycles[0] : cycles[1];
+            ArrayList<Integer> second_cycle = (cycle_with_id == cycles[0]) ? cycles[1] : cycles[0];
+
+            candidate_moves = vertex_exchange_new_id(candidate_moves, cycle_with_id, second_cycle, dist, id);
+            candidate_moves = edge_exchange_new_id(candidate_moves, cycle_with_id, dist, id);
+
+        }
+        return candidate_moves;
+    }
+
+    private static List<Operation> edge_exchange_new_id(List<Operation> candidate_moves, ArrayList<Integer> cycle, double[][] dist, int id) {
+
+        int i_value = id;
+        int id_id = cycle.indexOf(id);
+        int i_next = cycle.get(cycle.indexOf(id) + 1);
+        for (int j = 1; j < cycle.size() - 1; j++) {
+            if (Math.abs(id_id - j) < 2)
+                continue;
+
+            int j_value = cycle.get(j);
+            int j_next = cycle.get(j + 1);
+
+            double cost = (dist[i_value][j_value] + dist[i_next][j_next]) - (dist[i_value][i_next] + dist[j_value][j_next]);
+
+            if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost))) {
+                candidate_moves.add(new Operation("edge", i_value, i_next, j_value, j_next, cost));
+            }
+        }
+
+
+        return candidate_moves;
+    }
+
+    private static List<Operation> vertex_exchange_new_id(List<Operation> candidate_moves, ArrayList<Integer> cycle_with_id, ArrayList<Integer> second_cycle, double[][] dist, int id) {
+        int i_value = id;
+        int i_prev=0, i_next=0;
+        try {
+            i_prev = cycle_with_id.get(cycle_with_id.indexOf(id) - 1);
+            i_next = cycle_with_id.get(cycle_with_id.indexOf(id) + 1);
+        }
+        catch (Exception e){
+            System.out.println(id + " id" );
+            cycle_with_id.stream().forEach(x-> System.out.println(x));
+        }
+        for (int j = 1; j < second_cycle.size() - 1; j++) {
+            int j_prev = second_cycle.get(j - 1);
+            int j_value = second_cycle.get(j);
+            int j_next = second_cycle.get(j + 1);
+
+            double cost =
+                    (dist[i_prev][j_value] + dist[j_value][i_next] +
+                            dist[j_prev][i_value] + dist[i_value][j_next]) -
+                            (dist[i_prev][i_value] + dist[i_value][i_next] +
+                                    dist[j_prev][j_value] + dist[j_value][j_next]);
+
+            if (cost < 0 && !candidate_moves.contains(new Operation("vertex", i_value, j_value, cost))) {
+                candidate_moves.add(new Operation("vertex", i_value, j_value, cost));
+            }
+
+        }
+        return candidate_moves;
     }
 
     static ArrayList<Integer>[] nearest_vertex(double[][] distances, ArrayList<Integer>[] cycles) {
