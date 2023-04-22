@@ -4,7 +4,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class Main {
-    static int size = 10;
+    static int size = 100;
 
     static class Node {
         Node(int x, int y) {
@@ -103,24 +103,6 @@ class Main {
         return closest;
     }
 
-    static void cycle_creation(double[][] dist, ArrayList<Integer> not_used, ArrayList<Integer> solution) {
-        double min_dist = Double.MAX_VALUE;
-        int min_id = -1;
-        int after_whom_in_solution = -1;
-        for (int i : not_used) {
-            for (int j = 0; j + 1 < solution.size(); j++) {
-                double w = dist[solution.get(j)][i] + dist[i][solution.get(j + 1)] - dist[solution.get(j)][solution.get(j + 1)];
-                if (w < min_dist) {
-                    min_id = i;
-                    min_dist = w;
-                    after_whom_in_solution = solution.get(j);
-                }
-            }
-        }
-        solution.add(solution.indexOf(after_whom_in_solution) + 1, min_id);
-        not_used.remove(Integer.valueOf(min_id));
-    }
-
     static int find_second_starting_node(int first_id, double[][] distances) {
         int second_id = -1;
         double max_dist = 0.0;
@@ -215,8 +197,18 @@ class Main {
             boolean first = cycles[0].containsAll(Arrays.asList(move.from, move.from_next, move.to, move.to_next));
             boolean second = cycles[1].containsAll(Arrays.asList(move.from, move.from_next, move.to, move.to_next));
             if (first) {
+                if (from_in_first > to_in_first) {
+                    var temp = from_in_first;
+                    from_in_first = to_in_first;
+                    to_in_first = temp;
+                }
                 Collections.reverse(cycles[0].subList(from_in_first + 1, to_in_first + 1));
             } else if (second) {
+                if (from_in_second > to_in_second) {
+                    var temp = from_in_second;
+                    from_in_second = to_in_second;
+                    to_in_second = temp;
+                }
                 Collections.reverse(cycles[1].subList(from_in_second + 1, to_in_second + 1));
             } else {
                 System.out.println("Nie działa w edges");
@@ -259,17 +251,20 @@ class Main {
             Collections.sort(candidate_moves, Operation::compareTo);
             if (candidate_moves.isEmpty())
                 break;
+
             Operation best_move = candidate_moves.get(0);
             make_best_move(best_move, cycles);
 
             System.out.print(get_result(distances, cycles[0]) + get_result(distances, cycles[1]));
-            System.out.println(" "+best_move.type);
+            System.out.println(" " + best_move.type);
+
             List<Integer> ids_to_update = new ArrayList<>() {{
                 addAll(Arrays.asList(best_move.from, best_move.to));
             }};
             if (best_move.type.equals("edge"))
                 ids_to_update.addAll(Arrays.asList(best_move.from_next, best_move.to_next));
 
+            ids_to_update.removeAll(Arrays.asList(cycles[0].get(0), cycles[1].get(0)));
             candidate_moves.remove(best_move);
 
             candidate_moves = remove_not_applicable(candidate_moves, ids_to_update);
@@ -306,9 +301,9 @@ class Main {
 
             double cost = (dist[i_value][j_value] + dist[i_next][j_next]) - (dist[i_value][i_next] + dist[j_value][j_next]);
 
-            if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost))) {
+            if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost)))
                 candidate_moves.add(new Operation("edge", i_value, i_next, j_value, j_next, cost));
-            }
+
         }
 
 
@@ -317,15 +312,9 @@ class Main {
 
     private static List<Operation> vertex_exchange_new_id(List<Operation> candidate_moves, ArrayList<Integer> cycle_with_id, ArrayList<Integer> second_cycle, double[][] dist, int id) {
         int i_value = id;
-        int i_prev=0, i_next=0;
-        try {
-            i_prev = cycle_with_id.get(cycle_with_id.indexOf(id) - 1);
-            i_next = cycle_with_id.get(cycle_with_id.indexOf(id) + 1);
-        }
-        catch (Exception e){
-            System.out.println(id + " id" );
-            cycle_with_id.stream().forEach(x-> System.out.println(x));
-        }
+        int i_prev = cycle_with_id.get(cycle_with_id.indexOf(id) - 1);
+        int i_next = cycle_with_id.get(cycle_with_id.indexOf(id) + 1);
+
         for (int j = 1; j < second_cycle.size() - 1; j++) {
             int j_prev = second_cycle.get(j - 1);
             int j_value = second_cycle.get(j);

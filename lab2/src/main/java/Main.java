@@ -273,6 +273,7 @@ class Main {
         if (min_cost != Double.MAX_VALUE)
             Collections.reverse(first_cycle.subList(i_idx_to_reverse, j_idx_to_reverse));
 
+        System.out.println(i_idx_to_reverse +" " + j_idx_to_reverse);
         return first_cycle;
     }
 
