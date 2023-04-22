@@ -4,7 +4,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class Main {
-    static int size = 100;
+    static int size = 18;
 
     static class Node {
         Node(int x, int y) {
@@ -48,17 +48,15 @@ class Main {
         }
 
         @Override
-        public boolean equals(Object obj) {
-            var o = (Operation) obj;
-            if (this.type.equals(o.type) && this.evaluation == o.evaluation &&
-                    this.to_next == o.to_next && this.from_next == o.from_next &&
-                    this.from == o.from && this.to == o.to) {
-                return  true;
-            }
-            else
-                return false;
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Operation operation = (Operation) o;
+            return Double.compare(operation.evaluation, this.evaluation) == 0 &&
+                    Objects.equals(this.type, operation.type);
         }
     }
+
 
     static void load_data(Node[] data, String filename) throws IOException {
         Scanner sc = new Scanner(Main.class.getClassLoader().getResource(filename).openStream());
@@ -135,33 +133,15 @@ class Main {
         return second_id;
     }
 
-    static List<Operation> remove_not_applicable(List<Operation> candidate_moves, ArrayList<Integer>[] cycles) {
-        List<Operation> to_remove = new ArrayList<>();
-        for (Operation move : candidate_moves) {
-            int from_in_first = cycles[0].indexOf(move.from);
-            int from_in_second = cycles[1].indexOf(move.from);
-            int to_in_first = cycles[0].indexOf(move.to);
-            int to_in_second = cycles[1].indexOf(move.to);
-
-            if (move.type.equals("vertex")) {
-                if (!(from_in_first != -1 && to_in_second != -1 || from_in_second != -1 && to_in_first != -1)) {
-                    to_remove.add(move);
-                }
-            } else if (move.type.equals("edge")) {
-                int from_next_in_first = cycles[0].indexOf(move.from_next);
-                int from_next_in_second = cycles[1].indexOf(move.from_next);
-                int to_next_in_first = cycles[0].indexOf(move.to_next);
-                int to_next_in_second = cycles[1].indexOf(move.to_next);
-
-                if (!(from_in_first != -1 && from_next_in_first != -1 && from_in_first + 1 == from_next_in_first &&
-                        to_in_second != -1 && to_next_in_second != -1 && to_in_second + 1 == to_next_in_second ||
-                        from_in_second != -1 && from_next_in_second != -1 && from_in_second + 1 == from_next_in_second &&
-                                to_in_first != -1 && to_next_in_first != -1 && to_in_first + 1 == to_next_in_first)) {
-                    to_remove.add(move);
-                }
+    static List<Operation> remove_not_applicable(List<Operation> candidate_moves, List<Integer> ids_to_update) {
+        Set<Operation> moves_to_remove = new HashSet<>();
+        for (int id : ids_to_update) {
+            for (Operation move : candidate_moves) {
+                if (Arrays.asList(move.from, move.from_next, move.to, move.to_next).contains(id))
+                    moves_to_remove.add(move);
             }
         }
-        candidate_moves.removeAll(to_remove);
+        candidate_moves.removeAll(moves_to_remove);
         return candidate_moves;
     }
 
@@ -214,8 +194,7 @@ class Main {
         return candidate_moves;
     }
 
-    private static List<Operation> make_best_move(List<Operation> candidate_moves, ArrayList<Integer>[] cycles) {
-        Operation move = candidate_moves.get(0);
+    private static void make_best_move(Operation move, ArrayList<Integer>[] cycles) {
         var from_in_first = cycles[0].indexOf(move.from);
         var from_in_second = cycles[1].indexOf(move.from);
         var to_in_first = cycles[0].indexOf(move.to);
@@ -243,8 +222,6 @@ class Main {
                 System.out.println("Nie działa w edges");
             }
         }
-        candidate_moves.remove(move);
-        return candidate_moves;
     }
 
     static void print_result(double distances[][], ArrayList<Integer>[] cycles, String[] type) {
@@ -272,37 +249,39 @@ class Main {
 
     static ArrayList<Integer>[] list_of_moves(double[][] distances, ArrayList<Integer>[] cycles) {
         List<Operation> candidate_moves = new ArrayList<>();
+        candidate_moves = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1], candidate_moves);
+        candidate_moves = steep_edge_exchange(distances, cycles[0], candidate_moves);
+        candidate_moves = steep_edge_exchange(distances, cycles[1], candidate_moves);
 
         while (true) {
             System.out.println(get_result(distances, cycles[0]) + get_result(distances, cycles[1]));
-            candidate_moves = remove_not_applicable(candidate_moves, cycles);
-
-            candidate_moves = steep_vertex_between_two_exchange(distances, cycles[0], cycles[1], candidate_moves);
-            candidate_moves = steep_edge_exchange(distances, cycles[0], candidate_moves);
-            candidate_moves = steep_edge_exchange(distances, cycles[1], candidate_moves);
-
             Collections.sort(candidate_moves, Operation::compareTo);
-
-            Set<Operation> mySet = new LinkedHashSet<>(candidate_moves);
-            candidate_moves.clear();
-            candidate_moves.addAll(mySet);
-
-
-
             if (candidate_moves.isEmpty())
                 break;
-            else {
-                candidate_moves = make_best_move(candidate_moves, cycles);
-            }
+            Operation best_move = candidate_moves.get(0);
+            make_best_move(best_move, cycles);
+            List<Integer> ids_to_update = new ArrayList<>() {{
+                addAll(Arrays.asList(best_move.from, best_move.to));
+            }};
+            if (best_move.type.equals("edge"))
+                ids_to_update.addAll(Arrays.asList(best_move.from_next, best_move.to_next));
+
+            candidate_moves.remove(best_move);
+
+            candidate_moves = remove_not_applicable(candidate_moves, ids_to_update);
+
         }
         return cycles;
     }
 
     static ArrayList<Integer>[] nearest_vertex(double[][] distances, ArrayList<Integer>[] cycles) {
         List<Operation> candidate_moves = new ArrayList<>();
-        var x = closest_vertexes(distances);
+        var nearest = closest_vertexes(distances);
         for (int node = 0; node < cycles[0].size() - 1; node++) {
 
+            for (int i = 0; i < 10; i++) {
+
+            }
         }
         for (int node = 0; node < cycles[0].size() - 1; node++) {
 
