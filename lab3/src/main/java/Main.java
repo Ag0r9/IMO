@@ -37,6 +37,10 @@ class Main {
             this.valid = valid;
         }
 
+        public void setValid(boolean valid) {
+            this.valid = valid;
+        }
+
         String type;
         double evaluation;
         int from;
@@ -129,17 +133,33 @@ class Main {
         }
         candidate_moves.removeAll(moves_to_remove);
 
-        /*for (Operation move : candidate_moves) {
+        for (Operation move : candidate_moves) {
             if (move.type.equals("vertex"))
                 continue;
 
             if (cycles[0].contains(move.from)) {
                 if (cycles[0].indexOf(move.from) + 1 == cycles[0].indexOf(move.from_next)
-                        && cycles[0].indexOf(move.to) == cycles[0].indexOf(move.to_next) + 1)
-            } else {
+                        && cycles[0].indexOf(move.to) == cycles[0].indexOf(move.to_next) + 1 ||
+                        cycles[0].indexOf(move.to) + 1 == cycles[0].indexOf(move.to_next)
+                                && cycles[0].indexOf(move.from) == cycles[0].indexOf(move.from_next) + 1) {
+                    move.setValid(false);
+                } else if (cycles[0].indexOf(move.from) + 1 == cycles[0].indexOf(move.from_next)
+                        && cycles[0].indexOf(move.to) + 1 == cycles[0].indexOf(move.to_next)) {
+                    move.setValid(true);
+                }
 
+            } else {
+                if (cycles[1].indexOf(move.from) + 1 == cycles[1].indexOf(move.from_next)
+                        && cycles[1].indexOf(move.to) == cycles[1].indexOf(move.to_next) + 1 ||
+                        cycles[1].indexOf(move.to) + 1 == cycles[1].indexOf(move.to_next)
+                                && cycles[1].indexOf(move.from) == cycles[1].indexOf(move.from_next) + 1) {
+                    move.setValid(false);
+                } else if (cycles[1].indexOf(move.from) + 1 == cycles[1].indexOf(move.from_next)
+                        && cycles[1].indexOf(move.to) + 1 == cycles[1].indexOf(move.to_next)) {
+                    move.setValid(true);
+                }
             }
-        }*/
+        }
 
         return candidate_moves;
     }
@@ -262,21 +282,26 @@ class Main {
         candidate_moves = steep_edge_exchange(distances, cycles[0], candidate_moves);
         candidate_moves = steep_edge_exchange(distances, cycles[1], candidate_moves);
 
-        System.out.println(get_result(distances, cycles[0]) + get_result(distances, cycles[1]));
-
         while (true) {
             Collections.sort(candidate_moves, Operation::compareTo);
-            if (candidate_moves.isEmpty())
+
+
+            Operation best_move = null;
+            for(Operation move: candidate_moves){
+                if(move.valid){
+                    best_move = move;
+                    break;
+                }
+            }
+
+            if (candidate_moves.isEmpty() || best_move == null)
                 break;
 
-            Operation best_move = candidate_moves.get(0);
             make_best_move(best_move, cycles);
 
-            System.out.print(get_result(distances, cycles[0]) + get_result(distances, cycles[1]));
-            System.out.println(" " + best_move.type);
-
+            Operation finalBest_move = best_move;
             List<Integer> ids_to_update = new ArrayList<>() {{
-                addAll(Arrays.asList(best_move.from, best_move.to));
+                addAll(Arrays.asList(finalBest_move.from, finalBest_move.to));
             }};
             if (best_move.type.equals("edge"))
                 ids_to_update.addAll(Arrays.asList(best_move.from_next, best_move.to_next));
