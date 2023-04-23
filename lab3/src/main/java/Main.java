@@ -4,8 +4,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class Main {
-    static int size = 100;
-    static int near_vertexes = 12;
+    static int size = 200;
+    static int near_vertexes = 13;
 
     static class Node {
         Node(int x, int y) {
@@ -465,9 +465,9 @@ class Main {
                             if (cost_rem_left_ins_left < 0) {
                                 candidate_moves.add(new NearMove("outer remove_left insert_left", node_1left, this_node, -1, node_to_insert, cost_rem_left_ins_left, cycles[x], cycle_with_sec_id));
                             }
-                        //    if (cost_rem_left_ins_right < 0) {
-                        //        candidate_moves.add(new NearMove("outer remove_left insert_right", node_1left, this_node, -1, node_to_insert, cost_rem_left_ins_right, cycles[x], cycle_with_sec_id));
-                        //    }
+                            if (cost_rem_left_ins_right < 0) {
+                                candidate_moves.add(new NearMove("outer remove_left insert_right", node_1left, this_node, -1, node_to_insert, cost_rem_left_ins_right, cycles[x], cycle_with_sec_id));
+                            }
                             if (cost_rem_right_ins_left < 0) {
                                 candidate_moves.add(new NearMove("outer remove_right insert_left", -1, this_node, node_1right, node_to_insert, cost_rem_right_ins_left, cycles[x], cycle_with_sec_id));
                             }
@@ -526,17 +526,17 @@ class Main {
         } else if (t[0].equals("outer")) {
             if (nearMove.type.substring(6).equals("remove_right insert_left")) {
                 second_cycle.set(second_cycle.indexOf(nearMove.swap_id), nearMove.right_id);
-                cycle_with_id.set(cycle_with_id.indexOf(nearMove.right_id), nearMove.id);
-                cycle_with_id.set(cycle_with_id.indexOf(nearMove.id), nearMove.swap_id);
+                cycle_with_id.remove((Integer) nearMove.right_id);
+                cycle_with_id.add(cycle_with_id.indexOf(nearMove.id), nearMove.swap_id);
             } else if (nearMove.type.substring(6).equals("remove_left insert_right")) {
                 second_cycle.set(second_cycle.indexOf(nearMove.swap_id), nearMove.left_id);
-                cycle_with_id.set(cycle_with_id.indexOf(nearMove.left_id), nearMove.id);
-                cycle_with_id.set(cycle_with_id.indexOf(nearMove.id), nearMove.swap_id);
+                cycle_with_id.remove((Integer) nearMove.left_id);
+                cycle_with_id.add(cycle_with_id.indexOf(nearMove.id) + 1, nearMove.swap_id);
             } else if (nearMove.type.substring(6).equals("remove_right insert_right")) {
                 second_cycle.set(second_cycle.indexOf(nearMove.swap_id), nearMove.right_id);
-                cycle_with_id.set(cycle_with_id.indexOf(nearMove.right_id),nearMove.swap_id);
+                cycle_with_id.set(cycle_with_id.indexOf(nearMove.right_id), nearMove.swap_id);
             } else if (nearMove.type.substring(6).equals("remove_left insert_left")) {
-                second_cycle.set(second_cycle.indexOf(nearMove.swap_id),nearMove.left_id);
+                second_cycle.set(second_cycle.indexOf(nearMove.swap_id), nearMove.left_id);
                 cycle_with_id.set(cycle_with_id.indexOf(nearMove.left_id), nearMove.swap_id);
             }
         }
@@ -615,7 +615,7 @@ class Main {
 
     public static void main(String[] args) throws IOException {
         Node[] nodes = new Node[size];
-        load_data(nodes, "kroA100.tsp");
+        load_data(nodes, "kroA200.tsp");
         double[][] distances = calculate_distance(nodes);
 
         Random rand = new Random();
