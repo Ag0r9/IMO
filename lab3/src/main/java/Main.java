@@ -513,9 +513,9 @@ class Main {
         ArrayList<Integer> cycle_with_id = cycles[0].contains(nearMove.id) ? cycles[0] : cycles[1];
         ArrayList<Integer> second_cycle = cycles[0].contains(nearMove.swap_id) ? cycles[0] : cycles[1];
 
-        System.out.println(get_result(dist, cycles[0]) + get_result(dist, cycles[1]));
-        System.out.println(nearMove.type);
-        System.out.println(nearMove.evaluation);
+//        System.out.println(get_result(dist, cycles[0]) + get_result(dist, cycles[1]));
+//        System.out.println(nearMove.type);
+//        System.out.println(nearMove.evaluation);
         if (t[0].equals("inner")) {
             cycle_with_id.remove((Integer) nearMove.swap_id);
             if (t[1].equals("right")) {
@@ -540,7 +540,7 @@ class Main {
                 cycle_with_id.set(cycle_with_id.indexOf(nearMove.left_id), nearMove.swap_id);
             }
         }
-        System.out.println(get_result(dist, cycles[0]) + get_result(dist, cycles[1]) + "\n");
+//        System.out.println(get_result(dist, cycles[0]) + get_result(dist, cycles[1]) + "\n");
 
     }
 
@@ -625,8 +625,8 @@ class Main {
         ArrayList<Integer> cycles[] = generate_random_cycles(first_id, second_id);
         //ArrayList<Integer> cycles = generate_greedy_cycles(distances, first_id, second_id);
 
-        //cycles = list_of_moves(distances, cycles);
-        cycles = nearest_vertex(distances, cycles);
+        cycles = list_of_moves(distances, cycles);
+        //cycles = nearest_vertex(distances, cycles);
 
         //cycles = steepest(distances, cycles);
 
