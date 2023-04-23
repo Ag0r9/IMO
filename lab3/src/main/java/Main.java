@@ -65,6 +65,39 @@ class Main {
         }
     }
 
+    static class NearMove implements Comparable {
+        String type;
+        int left_id;
+        int id;
+        int right_id;
+        int swap_id;
+        double evaluation;
+
+        ArrayList<Integer> cycle;
+        ArrayList<Integer> sec_cycle;
+
+        NearMove(String type,
+                 int left_id,
+                 int id,
+                 int right_id,
+                 int swap_id,
+                 double evaluation, ArrayList<Integer> cycle,
+                 ArrayList<Integer> sec_cycle) {
+            this.type = type;
+            this.id = id;
+            this.right_id = right_id;
+            this.left_id = left_id;
+            this.swap_id = swap_id;
+            this.evaluation = evaluation;
+            this.cycle = cycle;
+            this.sec_cycle = sec_cycle;
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            return Double.compare(this.evaluation, ((NearMove) o).evaluation);
+        }
+    }
 
     static void load_data(Node[] data, String filename) throws IOException {
         Scanner sc = new Scanner(Main.class.getClassLoader().getResource(filename).openStream());
@@ -316,7 +349,6 @@ class Main {
         return cycles;
     }
 
-
     private static List<Operation> add_new_moves(List<Operation> candidate_moves, ArrayList<Integer>[] cycles, List<Integer> ids_to_update, double[][] dist) {
         for (int id : ids_to_update) {
             ArrayList<Integer> cycle_with_id = cycles[0].contains(id) ? cycles[0] : cycles[1];
@@ -377,27 +409,107 @@ class Main {
     }
 
     static ArrayList<Integer>[] nearest_vertex(double[][] dist, ArrayList<Integer>[] cycles) {
-        List<Operation> candidate_moves = new ArrayList<>();
+        List<NearMove> candidate_moves = new ArrayList<>();
         var nearest = closest_vertexes(dist);
-        for (int node = 1; node < cycles[0].size() - 1; node++) {
+        while (true) {
+            System.out.println(get_result(dist,cycles[0]) + get_result(dist,cycles[1]));
+            for (int x = 0; x < 2; x++) {
+                for (int node = 1; node < cycles[x].size() - 1; node++) {
 
-            for (int i = 0; i < 10; i++) {
-                int node_2left = cycles[0].get(node - 2);
-                int node_1left = cycles[0].get(node - 1);
-                int node_2right = cycles[0].get(node + 2);
-                int node_1right = cycles[0].get(node + 1);
-                int this_node = cycles[0].get(node);
+                    for (int i = 0; i < 10; i++) {
+                        if (cycles[x].get(node) == nearest[cycles[x].get(node)][i])
+                            continue;
 
-                int node_to_insert_1left = cycles[0].get(cycles[0].indexOf(nearest[this_node][i]) - 1);
-                int node_to_insert = nearest[this_node][i];
-                int node_to_insert_1right = cycles[0].get(cycles[0].indexOf(nearest[this_node][i]) + 1);
-                //wersja: wszystko w cyklu
-                double cost_left = dist[node_2left][this_node] + dist[this_node][node_to_insert] + dist[node_to_insert][node_1right] +
-                        dist[node_to_insert_1left][node_1left] + dist[node_1left][node_to_insert_1right];
+                        int node_1left = cycles[x].get(node - 1);
+                        int node_1right = cycles[x].get(node + 1);
+                        int this_node = cycles[x].get(node);
+                        ArrayList<Integer> cycle_with_sec_id = cycles[0].contains(nearest[this_node][i]) ? cycles[0] : cycles[1];
+                        int node_to_insert = nearest[this_node][i];
+                        int node_to_insert_id = cycle_with_sec_id.indexOf(node_to_insert);
+
+                        if (node_to_insert_id < 2 || node_to_insert_id >= cycle_with_sec_id.size() - 2)
+                            continue;
+
+                        int node_to_insert_1left = cycle_with_sec_id.get(cycle_with_sec_id.indexOf(node_to_insert) - 1);
+                        int node_to_insert_1right = cycle_with_sec_id.get(cycle_with_sec_id.indexOf(node) + 1);
+
+                        if (!cycle_with_sec_id.equals(cycles[x])) {
+                            double cost_rem_left = 1, cost_rem_right = 1;
+                            if (node > 2) {
+                                int node_2left = cycles[x].get(node - 2);
+                                cost_rem_left = dist[node_2left][this_node] + dist[this_node][node_to_insert] + dist[node_to_insert][node_1right] +
+                                        dist[node_to_insert_1left][node_1left] + dist[node_1left][node_to_insert_1right] - (
+                                        dist[node_2left][node_1left] + dist[node_1left][this_node] + dist[this_node][node_1right] +
+                                                dist[node_to_insert_1left][node_to_insert] + dist[node_to_insert][node_1right]
+                                );
+                            }
+                            if (node + 3 < cycles[0].size()) {
+                                int node_2right = cycles[0].get(node + 2);
+                                cost_rem_right = dist[this_node][node_to_insert] + dist[node_to_insert][node_2right] +
+                                        dist[node_to_insert_1left][node_1right] + dist[node_1right][node_to_insert_1right] - (
+                                        dist[this_node][node_1right] + dist[node_1right][node_2right] +
+                                                dist[node_to_insert_1left][node_to_insert] + dist[node_to_insert][node_1right]
+                                );
+                            }
+                            if (cost_rem_left < 0 && cost_rem_left < cost_rem_right) {
+                                candidate_moves.add(new NearMove("outer left", node_1left, this_node, -1, node_to_insert, cost_rem_left, cycles[x], cycle_with_sec_id));
+                            } else if (cost_rem_right < 0 && cost_rem_left > cost_rem_right) {
+                                candidate_moves.add(new NearMove("outer right", -1, this_node, node_1right, node_to_insert, cost_rem_right, cycles[x], cycle_with_sec_id));
+                            }
+
+                        } else {
+                            double cost_right = dist[this_node][node_to_insert] + dist[node_to_insert][node_1right] +
+                                    dist[node_to_insert_1left][node_to_insert_1right] - (
+                                    dist[this_node][node_1right] + dist[node_to_insert_1left][node_to_insert]
+                                            + dist[node_to_insert][node_to_insert_1right]);
+                            double cost_left = dist[node_1left][node_to_insert] + dist[node_to_insert][this_node] +
+                                    dist[node_to_insert_1left][node_to_insert_1right] - (
+                                    dist[node_1left][this_node] + dist[node_to_insert_1left][node_to_insert]
+                                            + dist[node_to_insert][node_to_insert_1right]);
+                            if (cost_left < 0 && cost_left < cost_right) {
+                                candidate_moves.add(new NearMove("inner left", -1, this_node, -1, node_to_insert, cost_left, cycles[x], null));
+                            } else if (cost_right < 0 && cost_left > cost_right) {
+                                candidate_moves.add(new NearMove("inner right", -1, this_node, -1, node_to_insert, cost_right, cycles[x], null));
+                            }
+                        }
+                    }
+                }
             }
+            if (candidate_moves.isEmpty())
+                break;
+
+            Collections.sort(candidate_moves, NearMove::compareTo);
+            make_best_near_move(candidate_moves.get(0), cycles);
         }
 
         return cycles;
+    }
+
+    private static void make_best_near_move(NearMove nearMove, ArrayList<Integer>[] cycles) {
+        String t[] = nearMove.type.split(" ");
+        ArrayList<Integer> cycle_with_id = cycles[0].contains(nearMove.id) ? cycles[0] : cycles[1];
+        ArrayList<Integer> second_cycle = cycles[0].contains(nearMove.swap_id) ? cycles[0] : cycles[1];
+
+
+        if (t[0].equals("inner")) {
+            cycle_with_id.remove(nearMove.swap_id);
+            if (t[1].equals("right")) {
+                cycle_with_id.add(cycle_with_id.indexOf(nearMove.id) + 1, nearMove.swap_id);
+            } else {
+                cycle_with_id.add(cycle_with_id.indexOf(nearMove.id), nearMove.swap_id);
+            }
+        } else {
+            if (t[1].equals("right")) {
+                second_cycle.set(second_cycle.indexOf(nearMove.swap_id), nearMove.right_id);
+                cycle_with_id.set(cycle_with_id.indexOf(nearMove.right_id), nearMove.id);
+                nearMove.cycle.set(cycle_with_id.indexOf(nearMove.id), nearMove.swap_id);
+            } else {
+                second_cycle.set(second_cycle.indexOf(nearMove.swap_id), nearMove.left_id);
+                cycle_with_id.set(cycle_with_id.indexOf(nearMove.left_id), nearMove.id);
+                cycle_with_id.set(cycle_with_id.indexOf(nearMove.id), nearMove.swap_id);
+            }
+        }
+
     }
 
     static ArrayList<Integer>[] generate_random_cycles(int first_id, int second_id) {
@@ -425,6 +537,50 @@ class Main {
         return new ArrayList[]{first_cycle, second_cycle};
     }
 
+    static void cycle_creation(double[][] dist, ArrayList<Integer> not_used, ArrayList<Integer> solution) {
+        double min_dist = Double.MAX_VALUE;
+        int min_id = -1;
+        int after_whom_in_solution = -1;
+        for (int i : not_used) {
+            for (int j = 0; j + 1 < solution.size(); j++) {
+                double w = dist[solution.get(j)][i] + dist[i][solution.get(j + 1)] - dist[solution.get(j)][solution.get(j + 1)];
+                if (w < min_dist) {
+                    min_id = i;
+                    min_dist = w;
+                    after_whom_in_solution = solution.get(j);
+                }
+            }
+        }
+        solution.add(solution.indexOf(after_whom_in_solution) + 1, min_id);
+        not_used.remove(Integer.valueOf(min_id));
+    }
+
+    static ArrayList<Integer>[] generate_greedy_cycles(double[][] dist, int first_start, int second_start) {
+        ArrayList<Integer> not_used = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            if (i != first_start && i != second_start)
+                not_used.add(i);
+        }
+        ArrayList<Integer> solution1 = new ArrayList<>() {{
+            add(first_start);
+            add(first_start);
+        }};
+        ArrayList<Integer> solution2 = new ArrayList<>() {{
+            add(second_start);
+            add(second_start);
+        }};
+
+        while (solution1.size() < 51)
+            cycle_creation(dist, not_used, solution1);
+
+        while (solution2.size() < 51)
+            cycle_creation(dist, not_used, solution2);
+
+        ArrayList<Integer> x[] = new ArrayList[]{solution1, solution2};
+        return x;
+    }
+
+
     public static void main(String[] args) throws IOException {
         Node[] nodes = new Node[size];
         load_data(nodes, "kroA100.tsp");
@@ -435,11 +591,12 @@ class Main {
         int second_id = find_second_starting_node(first_id, distances);
 
         ArrayList<Integer> cycles[] = generate_random_cycles(first_id, second_id);
+        //ArrayList<Integer> cycles = generate_greedy_cycles(distances, first_id, second_id);
 
         //cycles = list_of_moves(distances, cycles);
-        //cycles = nearest_vertex(distances, cycles);
+        cycles = nearest_vertex(distances, cycles);
 
-        cycles = steepest(distances, cycles);
+        //cycles = steepest(distances, cycles);
 
         print_result(distances, cycles, args);
         cycles[0].forEach(i -> System.out.print(i + " "));
