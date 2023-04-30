@@ -6,78 +6,6 @@ import java.util.stream.IntStream;
 class Main {
     static int size = 200;
 
-    static class Node {
-        Node(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        int x;
-        int y;
-    }
-
-    static void load_data(Node[] data, String filename) throws IOException {
-        Scanner sc = new Scanner(Objects.requireNonNull(Main.class.getClassLoader().getResource(filename)).openStream());
-
-        for (int i = 0; i < 6; i++)
-            sc.nextLine();
-
-        for (int i = 0; i < size; i++) {
-            sc.next();
-            int x = Integer.parseInt(sc.next());
-            int y = Integer.parseInt(sc.next());
-            data[i] = new Node(x, y);
-        }
-        sc.close();
-    }
-
-    static double[][] calculate_distance(Node[] nodes) {
-        double[][] dist = new double[size][size];
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                double dx = nodes[i].x - nodes[j].x;
-                double dy = nodes[i].y - nodes[j].y;
-                dist[i][j] = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-            }
-        }
-        return dist;
-    }
-
-    static int find_second_starting_node(int first_id, double[][] distances) {
-        int second_id = -1;
-        double max_dist = 0.0;
-        for (int i = 0; i < size; i++) {
-            if (distances[i][first_id] > max_dist) {
-                second_id = i;
-                max_dist = distances[i][first_id];
-            }
-        }
-        return second_id;
-    }
-
-    static void print_result(double[][] distances, ArrayList<Integer>[] cycles, String[] type) {
-        double total_dist = 0.0;
-        for (ArrayList<Integer> cycle : cycles) {
-            for (int node_no = 0; node_no < cycle.size() - 1; node_no++) {
-                total_dist += distances[cycle.get(node_no)][cycle.get(node_no + 1)];
-            }
-        }
-        StringBuilder args = new StringBuilder();
-        for (String s : type) {
-            args.append(s).append(" ");
-        }
-        System.out.println(args.toString() + total_dist);
-    }
-
-    static double get_result(double[][] distances, ArrayList<Integer> cycle) {
-        double total_dist = 0.0;
-        for (int node_no = 0; node_no < cycle.size() - 1; node_no++) {
-            total_dist += distances[cycle.get(node_no)][cycle.get(node_no + 1)];
-        }
-
-        return total_dist;
-    }
-
     static ArrayList[] generate_random_cycles(int first_id, int second_id) {
         List<Integer> not_used = IntStream.range(0, size).filter(i -> i != first_id && i != second_id).boxed().collect(Collectors.toList());
         ArrayList<Integer> first_cycle = new ArrayList<>() {{
@@ -134,6 +62,47 @@ class Main {
         return 0.0;
     }
 
+    private static ArrayList[] MSLS(Random rand, double[][] distances) {
+        ArrayList[] best_cycles = new ArrayList[0];
+        double best_dist = Double.MAX_VALUE;
+        for (int i = 0; i < 100; i++) {
+            int first_id = rand.nextInt(size);
+            int second_id = HelperFunctions.find_second_starting_node(first_id, distances);
+            ArrayList[] cycles = generate_random_cycles(first_id, second_id);
+
+            double gain = -1;
+            while (gain < 0) {
+                gain = greedy_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
+                gain += greedy_edge_exchange(distances, cycles[0]);
+                gain += greedy_edge_exchange(distances, cycles[1]);
+            }
+            double total_dist = HelperFunctions.get_result(distances, cycles[0]) + HelperFunctions.get_result(distances, cycles[1]);
+            if (total_dist < best_dist) {
+                best_cycles = cycles;
+                best_dist = total_dist;
+            }
+        }
+        return best_cycles;
+    }
+
+    static void cycle_creation(double[][] dist, ArrayList<Integer> not_used, ArrayList<Integer> solution) {
+        double min_dist = Double.MAX_VALUE;
+        int min_id = -1;
+        int after_whom_in_solution = -1;
+        for (int i : not_used) {
+            for (int j = 0; j + 1 < solution.size(); j++) {
+                double w = dist[solution.get(j)][i] + dist[i][solution.get(j + 1)] - dist[solution.get(j)][solution.get(j + 1)];
+                if (w < min_dist) {
+                    min_id = i;
+                    min_dist = w;
+                    after_whom_in_solution = solution.get(j);
+                }
+            }
+        }
+        solution.add(solution.indexOf(after_whom_in_solution) + 1, min_id);
+        not_used.remove(Integer.valueOf(min_id));
+    }
+
     static List<Integer> get_random_order() {
         Random rand = new Random();
         List<Integer> indexes = IntStream.range(1, size / 2).boxed().collect(Collectors.toList());
@@ -141,6 +110,30 @@ class Main {
             Collections.swap(indexes, i, rand.nextInt(indexes.size()));
         }
         return indexes;
+    }
+
+    static ArrayList[] generate_greedy_cycles(double[][] dist, int first_start, int second_start) {
+        ArrayList<Integer> not_used = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            if (i != first_start && i != second_start)
+                not_used.add(i);
+        }
+        ArrayList<Integer> solution1 = new ArrayList<>() {{
+            add(first_start);
+            add(first_start);
+        }};
+        ArrayList<Integer> solution2 = new ArrayList<>() {{
+            add(second_start);
+            add(second_start);
+        }};
+
+        while (solution1.size() < size / 2 + 1)
+            cycle_creation(dist, not_used, solution1);
+
+        while (solution2.size() < size / 2 + 1)
+            cycle_creation(dist, not_used, solution2);
+
+        return new ArrayList[]{solution1, solution2};
     }
 
     static double greedy_edge_exchange(double[][] dist, ArrayList<Integer> first_cycle) {
@@ -167,43 +160,39 @@ class Main {
     }
 
     public static void main(String[] args) throws IOException {
-        Node[] nodes = new Node[size];
-        load_data(nodes, "kroA200.tsp");
-        double[][] distances = calculate_distance(nodes);
+        HelperFunctions.Node[] nodes = new HelperFunctions.Node[size];
+        HelperFunctions.load_data(nodes, "kroA200.tsp");
+        double[][] distances = HelperFunctions.calculate_distance(nodes);
         Random rand = new Random();
-        //int first_id = rand.nextInt(size);
-        //int second_id = find_second_starting_node(first_id, distances);
+        int first_id = rand.nextInt(size);
+        int second_id = HelperFunctions.find_second_starting_node(first_id, distances);
 
-        ArrayList[] cycles = MSLS(rand, distances);
+        //ArrayList[] cycles = MSLS(rand, distances);
+        ArrayList[] cycles = generate_greedy_cycles(distances, first_id, second_id);
 
+        cycles = small_perturbation(distances, cycles);
 
-        print_result(distances, cycles, args);
+        HelperFunctions.print_result(distances, cycles, args);
         cycles[0].forEach(i -> System.out.print(i + " "));
         System.out.println();
         cycles[1].forEach(i -> System.out.print(i + " "));
     }
 
-    private static ArrayList[] MSLS(Random rand, double[][] distances) {
-        ArrayList[] best_cycles = new ArrayList[0];
-        double best_dist = Double.MAX_VALUE;
-        for (int i = 0; i < 100; i++) {
-            int first_id = rand.nextInt(size);
-            int second_id = find_second_starting_node(first_id, distances);
-            ArrayList[] cycles = generate_random_cycles(first_id, second_id);
+    private static ArrayList[] small_perturbation(double[][] dist, ArrayList[] cycles) {
+        Random random = new Random();
+        double best_dist = HelperFunctions.get_total_dist(dist, cycles);
+        for (int iteration_no = 0; iteration_no < 10; iteration_no++) {
+            ArrayList[] cycles_for_perturbation = cycles.clone();
+            for (int perturbation_no = 0; perturbation_no < 13; perturbation_no++) {
 
-            double gain = -1;
-            while (gain < 0) {
-                gain = greedy_vertex_between_two_exchange(distances, cycles[0], cycles[1]);
-                gain += greedy_edge_exchange(distances, cycles[0]);
-                gain += greedy_edge_exchange(distances, cycles[1]);
             }
-            double total_dist = get_result(distances, cycles[0]) + get_result(distances, cycles[1]);
-            if (total_dist < best_dist) {
-                best_cycles = cycles;
-                best_dist = total_dist;
+            double dist_after_repair = HelperFunctions.get_total_dist(dist, cycles);
+            if (dist_after_repair < best_dist) {
+                best_dist = dist_after_repair;
+                cycles = cycles_for_perturbation;
             }
         }
-        return best_cycles;
+        return cycles;
     }
 
 
