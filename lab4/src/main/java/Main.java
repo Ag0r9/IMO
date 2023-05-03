@@ -184,7 +184,19 @@ class Main {
         for (int iteration_no = 0; iteration_no < 10; iteration_no++) {
             ArrayList[] cycles_for_perturbation = cycles.clone();
             for (int perturbation_no = 0; perturbation_no < 13; perturbation_no++) {
-
+                int operation_no = random.nextInt(3);
+                int cycle_no = random.nextInt(2);
+                switch (operation_no) {
+                    case 0:
+                        cycles[cycle_no] = random_edge_exchange(cycles[cycle_no]);
+                        break;
+                    case 1:
+                        cycles[(cycle_no + 1) % 2] = random_edge_exchange(cycles[(cycle_no + 1) % 2]);
+                        break;
+                    case 2:
+                        cycles = random_vertex_exchange(cycles);
+                        break;
+                }
             }
             double dist_after_repair = HelperFunctions.get_total_dist(dist, cycles);
             if (dist_after_repair < best_dist) {
@@ -193,6 +205,28 @@ class Main {
             }
         }
         return cycles;
+    }
+
+    private static ArrayList[] random_vertex_exchange(ArrayList<Integer>[] cycles) {
+        Random random = new Random();
+        int id_in_first_cycle = random.nextInt((size / 2) - 1) + 1;
+        int id_in_second_cycle = random.nextInt((size / 2) - 1) + 1;
+        int val_from_first_cycle = cycles[0].get(id_in_first_cycle);
+        int val_from_second_cycle = cycles[1].get(id_in_second_cycle);
+
+        cycles[0].set(id_in_first_cycle, val_from_second_cycle);
+        cycles[1].set(id_in_second_cycle, val_from_first_cycle);
+
+        return cycles;
+    }
+
+    private static ArrayList<Integer> random_edge_exchange(ArrayList cycle) {
+        Random random = new Random();
+        int first_id = random.nextInt((size / 2) - 1) + 1;
+        int second_id = random.nextInt((size / 2) - first_id - 1) + first_id + 1;
+
+        Collections.reverse(cycle.subList(first_id, second_id));
+        return cycle;
     }
 
 
