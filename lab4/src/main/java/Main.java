@@ -48,7 +48,7 @@ class Main {
         }
     }
 
-    static List<Operation> steep_vertex_between_two_exchange(
+    static void steep_vertex_between_two_exchange(
             double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle, List<Operation> candidate_moves) {
 
         for (int i = 1; i < first_cycle.size() - 1; i++) {
@@ -73,10 +73,9 @@ class Main {
                 }
             }
         }
-        return candidate_moves;
     }
 
-    static List<Operation> steep_edge_exchange(double[][] dist, ArrayList<Integer> cycle, List<Operation> candidate_moves) {
+    static void steep_edge_exchange(double[][] dist, ArrayList<Integer> cycle, List<Operation> candidate_moves) {
         for (int i = 0; i < cycle.size() - 1; i++) {
             for (int j = 0; j < cycle.size() - 1; j++) {
                 if (Math.abs(i - j) < 2)
@@ -94,7 +93,6 @@ class Main {
                 }
             }
         }
-        return candidate_moves;
     }
 
     static ArrayList[] generate_random_cycles(int first_id, int second_id) {
@@ -286,7 +284,7 @@ class Main {
                         cycles_for_perturbation[(cycle_no + 1) % 2] = random_edge_exchange(cycles_for_perturbation[(cycle_no + 1) % 2]);
                         break;
                     case 2:
-                        cycles_for_perturbation = random_vertex_exchange(cycles_for_perturbation);
+                        random_vertex_exchange(cycles_for_perturbation);
                         break;
                 }
             }
@@ -367,7 +365,7 @@ class Main {
         return cycles;
     }
 
-    private static ArrayList<Integer> random_edge_exchange(ArrayList cycle) {
+    private static ArrayList random_edge_exchange(ArrayList cycle) {
         Random random = new Random();
         int first_id = random.nextInt((size / 2) - 1) + 1;
         int second_id = random.nextInt((size / 2) - first_id) + first_id + 1;
