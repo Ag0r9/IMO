@@ -1,9 +1,28 @@
+import org.jetbrains.annotations.NotNull;
+
 import java.util.*;
 import java.io.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 class Main {
+    static class Nearest implements Comparable {
+        int x;
+        int y;
+        double evaluation;
+
+        Nearest(int x, int y, double evaluation) {
+            this.x = x;
+            this.y = y;
+            this.evaluation = evaluation;
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            return Double.compare(evaluation, ((Nearest) o).evaluation);
+        }
+    }
+
     static int size = 200;
 
     static class Operation implements Comparable {
@@ -258,8 +277,8 @@ class Main {
 
         //ArrayList[] cycles = MSLS(rand, distances);
         ArrayList[] cycles = generate_greedy_cycles(distances, first_id, second_id);
-
-        cycles = small_perturbation(distances, cycles);
+        //cycles = small_perturbation(distances, cycles);
+        cycles = destroy_and_repair(distances, cycles);
 
         HelperFunctions.print_result(distances, cycles, args);
         cycles[0].forEach(i -> System.out.print(i + " "));
@@ -267,8 +286,41 @@ class Main {
         cycles[1].forEach(i -> System.out.print(i + " "));
     }
 
+    private static ArrayList[] destroy_and_repair(double[][] distances, ArrayList<Integer>[] cycles) {
+        List<Nearest> nearests = new ArrayList<>();
+        for (int i = 1; i < cycles[0].size() - 1; i++) {
+            var val = cycles[0].get(i);
+            for (int x = val + 1; x < size; x++) {
+                if (cycles[0].contains(x) || (x == cycles[0].get(0)) || (x == cycles[1].get(0))) {
+                    continue;
+                }
+                nearests.add(new Nearest(val, x, distances[val][x]));
+            }
+        }
+        for (int i = 1; i < cycles[1].size() - 1; i++) {
+            var val = cycles[1].get(i);
+            for (int x = val + 1; x < size; x++) {
+                if (cycles[1].contains(x) || (x == cycles[0].get(0)) || (x == cycles[1].get(0))) {
+                    continue;
+                }
+                nearests.add(new Nearest(x, val, distances[val][x]));
+            }
+        }
+        Collections.sort(nearests);
+
+        ArrayList[] cycles_for_destroy = Arrays.copyOf(cycles, cycles.length);
+        for (int i = 0; i < nearests.size() &&
+                cycles_for_destroy[0].size() + cycles_for_destroy[1].size() < size * 0.8; i++) {
+            cycles_for_destroy[0].remove(nearests.get(i).x);
+            cycles_for_destroy[1].remove(nearests.get(i).y);
+        }
+
+
+        return cycles;
+    }
+
     private static ArrayList[] small_perturbation(double[][] dist, ArrayList[] cycles) {
-        System.out.println(HelperFunctions.get_total_dist(dist,cycles));
+        System.out.println(HelperFunctions.get_total_dist(dist, cycles));
         Random random = new Random();
         double best_dist = HelperFunctions.get_total_dist(dist, cycles);
         for (int iteration_no = 0; iteration_no < 17; iteration_no++) {
@@ -372,6 +424,4 @@ class Main {
         Collections.reverse(cycle.subList(first_id, second_id));
         return cycle;
     }
-
-
 }
