@@ -6,6 +6,97 @@ import java.util.stream.IntStream;
 class Main {
     static int size = 200;
 
+    static class Operation implements Comparable {
+        Operation(String type, int from, int to, double evaluation, boolean valid) {
+            this.type = type;
+            this.from = from;
+            this.to = to;
+            this.evaluation = evaluation;
+            this.from_next = -1;
+            this.to_next = -1;
+        }
+
+        Operation(String type, int from, int from_next, int to, int to_next, double evaluation, boolean valid) {
+            this.type = type;
+            this.from = from;
+            this.from_next = from_next;
+            this.to = to;
+            this.to_next = to_next;
+            this.evaluation = evaluation;
+        }
+
+        String type;
+        double evaluation;
+        int from;
+        int from_next;
+        int to;
+        int to_next;
+
+
+        @Override
+        public int compareTo(Object o) {
+            return Double.compare(this.evaluation, ((Operation) o).evaluation);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Operation operation = (Operation) o;
+            return Double.compare(operation.evaluation, this.evaluation) == 0 &&
+                    Objects.equals(this.type, operation.type);
+        }
+    }
+
+    static List<Operation> steep_vertex_between_two_exchange(
+            double[][] dist, ArrayList<Integer> first_cycle, ArrayList<Integer> second_cycle, List<Operation> candidate_moves) {
+
+        for (int i = 1; i < first_cycle.size() - 1; i++) {
+            for (int j = 1; j < second_cycle.size() - 1; j++) {
+
+                int i_prev = first_cycle.get(i - 1);
+                int i_value = first_cycle.get(i);
+                int i_next = first_cycle.get(i + 1);
+
+                int j_prev = second_cycle.get(j - 1);
+                int j_value = second_cycle.get(j);
+                int j_next = second_cycle.get(j + 1);
+
+                double cost =
+                        (dist[i_prev][j_value] + dist[j_value][i_next] +
+                                dist[j_prev][i_value] + dist[i_value][j_next]) -
+                                (dist[i_prev][i_value] + dist[i_value][i_next] +
+                                        dist[j_prev][j_value] + dist[j_value][j_next]);
+
+                if (cost < 0 && !candidate_moves.contains(new Operation("vertex", i_value, j_value, cost, true))) {
+                    candidate_moves.add(new Operation("vertex", i_value, j_value, cost, true));
+                }
+            }
+        }
+        return candidate_moves;
+    }
+
+    static List<Operation> steep_edge_exchange(double[][] dist, ArrayList<Integer> cycle, List<Operation> candidate_moves) {
+        for (int i = 0; i < cycle.size() - 1; i++) {
+            for (int j = 0; j < cycle.size() - 1; j++) {
+                if (Math.abs(i - j) < 2)
+                    continue;
+
+                int i_value = cycle.get(i);
+                int i_next = cycle.get(i + 1);
+                int j_value = cycle.get(j);
+                int j_next = cycle.get(j + 1);
+
+                double cost = (dist[i_value][j_value] + dist[i_next][j_next]) - (dist[i_value][i_next] + dist[j_value][j_next]);
+
+                if (cost < 0 && !candidate_moves.contains(new Operation("edge", i_value, i_next, j_value, j_next, cost, true))) {
+                    candidate_moves.add(new Operation("edge", i_value, i_next, j_value, j_next, cost, true));
+                }
+            }
+        }
+        return candidate_moves;
+    }
+
     static ArrayList[] generate_random_cycles(int first_id, int second_id) {
         List<Integer> not_used = IntStream.range(0, size).filter(i -> i != first_id && i != second_id).boxed().collect(Collectors.toList());
         ArrayList<Integer> first_cycle = new ArrayList<>() {{
@@ -179,30 +270,86 @@ class Main {
     }
 
     private static ArrayList[] small_perturbation(double[][] dist, ArrayList[] cycles) {
+        System.out.println(HelperFunctions.get_total_dist(dist,cycles));
         Random random = new Random();
         double best_dist = HelperFunctions.get_total_dist(dist, cycles);
-        for (int iteration_no = 0; iteration_no < 10; iteration_no++) {
-            ArrayList[] cycles_for_perturbation = cycles.clone();
-            for (int perturbation_no = 0; perturbation_no < 13; perturbation_no++) {
+        for (int iteration_no = 0; iteration_no < 17; iteration_no++) {
+            ArrayList[] cycles_for_perturbation = Arrays.copyOf(cycles, cycles.length);
+            for (int perturbation_no = 0; perturbation_no < 15; perturbation_no++) {
                 int operation_no = random.nextInt(3);
                 int cycle_no = random.nextInt(2);
                 switch (operation_no) {
                     case 0:
-                        cycles[cycle_no] = random_edge_exchange(cycles[cycle_no]);
+                        cycles_for_perturbation[cycle_no] = random_edge_exchange(cycles_for_perturbation[cycle_no]);
                         break;
                     case 1:
-                        cycles[(cycle_no + 1) % 2] = random_edge_exchange(cycles[(cycle_no + 1) % 2]);
+                        cycles_for_perturbation[(cycle_no + 1) % 2] = random_edge_exchange(cycles_for_perturbation[(cycle_no + 1) % 2]);
                         break;
                     case 2:
-                        cycles = random_vertex_exchange(cycles);
+                        cycles_for_perturbation = random_vertex_exchange(cycles_for_perturbation);
                         break;
                 }
             }
-            double dist_after_repair = HelperFunctions.get_total_dist(dist, cycles);
+
+            steepest(dist, cycles_for_perturbation);
+            double dist_after_repair = HelperFunctions.get_total_dist(dist, cycles_for_perturbation);
             if (dist_after_repair < best_dist) {
                 best_dist = dist_after_repair;
-                cycles = cycles_for_perturbation;
+                cycles = Arrays.copyOf(cycles_for_perturbation, cycles_for_perturbation.length);
             }
+        }
+        return cycles;
+    }
+
+    private static void make_best_move(Operation move, ArrayList<Integer>[] cycles) {
+        var from_in_first = cycles[0].indexOf(move.from);
+        var from_in_second = cycles[1].indexOf(move.from);
+        var to_in_first = cycles[0].indexOf(move.to);
+        var to_in_second = cycles[1].indexOf(move.to);
+        if (move.type.equals("vertex")) {
+            if (from_in_first != -1 && to_in_second != -1) {
+                cycles[0].set(from_in_first, move.to);
+                cycles[1].set(to_in_second, move.from);
+
+            } else if (from_in_second != -1 && to_in_first != -1) {
+                cycles[1].set(from_in_second, move.to);
+                cycles[0].set(to_in_first, move.from);
+            }
+
+        } else if (move.type.equals("edge")) {
+            boolean first = cycles[0].containsAll(Arrays.asList(move.from, move.from_next, move.to, move.to_next));
+            boolean second = cycles[1].containsAll(Arrays.asList(move.from, move.from_next, move.to, move.to_next));
+            if (first) {
+                if (from_in_first > to_in_first) {
+                    var temp = from_in_first;
+                    from_in_first = to_in_first;
+                    to_in_first = temp;
+                }
+                Collections.reverse(cycles[0].subList(from_in_first + 1, to_in_first + 1));
+            } else if (second) {
+                if (from_in_second > to_in_second) {
+                    var temp = from_in_second;
+                    from_in_second = to_in_second;
+                    to_in_second = temp;
+                }
+                Collections.reverse(cycles[1].subList(from_in_second + 1, to_in_second + 1));
+            }
+        }
+    }
+
+    private static ArrayList<Integer>[] steepest(double[][] distances, ArrayList<Integer>[] cycles) {
+
+        List<Operation> candidate_moves = new ArrayList<>();
+        while (true) {
+            candidate_moves.clear();
+            steep_edge_exchange(distances, cycles[1], candidate_moves);
+            steep_edge_exchange(distances, cycles[0], candidate_moves);
+            steep_vertex_between_two_exchange(distances, cycles[0], cycles[1], candidate_moves);
+            if (candidate_moves.isEmpty()) {
+                break;
+            }
+            candidate_moves.sort(Operation::compareTo);
+            make_best_move(candidate_moves.get(0), cycles);
         }
         return cycles;
     }
@@ -223,8 +370,7 @@ class Main {
     private static ArrayList<Integer> random_edge_exchange(ArrayList cycle) {
         Random random = new Random();
         int first_id = random.nextInt((size / 2) - 1) + 1;
-        int second_id = random.nextInt((size / 2) - first_id - 1) + first_id + 1;
-
+        int second_id = random.nextInt((size / 2) - first_id) + first_id + 1;
         Collections.reverse(cycle.subList(first_id, second_id));
         return cycle;
     }
