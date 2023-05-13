@@ -235,14 +235,13 @@ class Main {
             add(second_start);
         }};
 
-        while (solution1.size() < size / 2 + 1)
+        while (solution1.size() < size / 2 + 1) {
             cycle_creation(dist, not_used, solution1);
-
-        while (solution2.size() < size / 2 + 1)
             cycle_creation(dist, not_used, solution2);
-
+        }
         return new ArrayList[]{solution1, solution2};
     }
+
     static double greedy_edge_exchange(double[][] dist, ArrayList<Integer> first_cycle) {
         List<Integer> indexes = get_random_order();
         for (int i : indexes) {
@@ -277,11 +276,10 @@ class Main {
         //ArrayList[] cycles = MSLS(rand, distances);
         ArrayList[] cycles = generate_greedy_cycles(distances, first_id, second_id);
         //cycles = small_perturbation(distances, cycles);
-        HelperFunctions.print_result(distances, cycles, args);
-
+        //HelperFunctions.print_result(distances, cycles, args);
         cycles = destroy_and_repair(distances, cycles);
-
         HelperFunctions.print_result(distances, cycles, args);
+
         cycles[0].forEach(i -> System.out.print(i + " "));
         System.out.println();
         cycles[1].forEach(i -> System.out.print(i + " "));
@@ -289,6 +287,7 @@ class Main {
 
     private static ArrayList[] destroy_and_repair(double[][] distances, ArrayList<Integer>[] cycles) {
         List<Nearest> nearests = new ArrayList<>();
+        //utworz listę najbliższych sobie wierzchołków
         for (int i = 1; i < cycles[0].size() - 1; i++) {
             var val = cycles[0].get(i);
             for (int x = val + 1; x < size; x++) {
@@ -308,23 +307,62 @@ class Main {
             }
         }
         Collections.sort(nearests);
+        //posortuj, by znaleźć najbliższe sobie
 
         Set<Integer> removed_nodes = new HashSet<>();
-        ArrayList[] cycles_for_destroy = Arrays.copyOf(cycles, cycles.length);
+
+        //idiotyczna inicjalizacja tablicy pomocnicznej, bo zazwyczaj idzie po referencji zamiast po wartościach XD
+        ArrayList[] cycles_for_destroy = new ArrayList[cycles.length];
+        for (int i = 0; i < cycles.length; i++) {
+            ArrayList originalCycle = cycles[i];
+            ArrayList newCycle = new ArrayList(originalCycle);
+            cycles_for_destroy[i] = newCycle;
+        }
+
+        //usun 20 procent najbliższych sobie wierzchołków, które są w osobnych cyklach
         for (int i = 0; i < nearests.size() &&
                 cycles_for_destroy[0].size() + cycles_for_destroy[1].size() > size * 0.8; i++) {
             cycles_for_destroy[0].remove((Integer) nearests.get(i).x);
             removed_nodes.add(nearests.get(i).x);
-            cycles_for_destroy[1].remove((Integer)  nearests.get(i).y);
+            cycles_for_destroy[1].remove((Integer) nearests.get(i).y);
             removed_nodes.add(nearests.get(i).y);
         }
+
+        //usun losowe 6 procent wierzchołków
+        Random rand = new Random();
+        for (int i = 0; i < 0.03 * size; i++) {
+            int id_1 = rand.nextInt(cycles_for_destroy[0].size() - 2) + 1;
+            int element_1 = (int) cycles_for_destroy[0].get(id_1);
+            cycles_for_destroy[0].remove(id_1);
+            int id_2 = rand.nextInt(cycles_for_destroy[0].size() - 2) + 1;
+            int element_2 = (int) cycles_for_destroy[0].get(id_2);
+            cycles_for_destroy[0].remove(id_2);
+            removed_nodes.add(element_1);
+            removed_nodes.add(element_2);
+        }
+
         ArrayList<Integer> removed_nodes_ale_to_lista = (ArrayList<Integer>) removed_nodes.stream().collect(Collectors.toList());
-        while (!removed_nodes_ale_to_lista.isEmpty()) {
+        //napraw, również za pomocą greedy cycle
+        while (!removed_nodes_ale_to_lista.isEmpty() && cycles_for_destroy[0].size() < 101 && cycles_for_destroy[1].size() < 101) {
             cycle_creation(distances, removed_nodes_ale_to_lista, cycles_for_destroy[1]);
             cycle_creation(distances, removed_nodes_ale_to_lista, cycles_for_destroy[0]);
         }
-        cycles = Arrays.copyOf(cycles_for_destroy, cycles_for_destroy.length);
-        return cycles;
+        switch (cycles_for_destroy[0].size()) {
+            case 101:
+                while (!removed_nodes_ale_to_lista.isEmpty())
+                    cycle_creation(distances, removed_nodes_ale_to_lista, cycles_for_destroy[1]);
+                break;
+            default:
+                while (!removed_nodes_ale_to_lista.isEmpty())
+                    cycle_creation(distances, removed_nodes_ale_to_lista, cycles_for_destroy[0]);
+                break;
+        }
+        //jak jest poprawa to zwróć poprawione, jak nie to CHLIP, ale no trudno i zwróć stare
+        if (HelperFunctions.get_total_dist(distances, cycles) - HelperFunctions.get_total_dist(distances, cycles_for_destroy) > 0) {
+            return cycles_for_destroy;
+        } else {
+            return cycles;
+        }
     }
 
     private static ArrayList[] small_perturbation(double[][] dist, ArrayList[] cycles) {
