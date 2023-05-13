@@ -243,7 +243,6 @@ class Main {
 
         return new ArrayList[]{solution1, solution2};
     }
-
     static double greedy_edge_exchange(double[][] dist, ArrayList<Integer> first_cycle) {
         List<Integer> indexes = get_random_order();
         for (int i : indexes) {
@@ -278,6 +277,8 @@ class Main {
         //ArrayList[] cycles = MSLS(rand, distances);
         ArrayList[] cycles = generate_greedy_cycles(distances, first_id, second_id);
         //cycles = small_perturbation(distances, cycles);
+        HelperFunctions.print_result(distances, cycles, args);
+
         cycles = destroy_and_repair(distances, cycles);
 
         HelperFunctions.print_result(distances, cycles, args);
@@ -308,14 +309,21 @@ class Main {
         }
         Collections.sort(nearests);
 
+        Set<Integer> removed_nodes = new HashSet<>();
         ArrayList[] cycles_for_destroy = Arrays.copyOf(cycles, cycles.length);
         for (int i = 0; i < nearests.size() &&
-                cycles_for_destroy[0].size() + cycles_for_destroy[1].size() < size * 0.8; i++) {
-            cycles_for_destroy[0].remove(nearests.get(i).x);
-            cycles_for_destroy[1].remove(nearests.get(i).y);
+                cycles_for_destroy[0].size() + cycles_for_destroy[1].size() > size * 0.8; i++) {
+            cycles_for_destroy[0].remove((Integer) nearests.get(i).x);
+            removed_nodes.add(nearests.get(i).x);
+            cycles_for_destroy[1].remove((Integer)  nearests.get(i).y);
+            removed_nodes.add(nearests.get(i).y);
         }
-
-
+        ArrayList<Integer> removed_nodes_ale_to_lista = (ArrayList<Integer>) removed_nodes.stream().collect(Collectors.toList());
+        while (!removed_nodes_ale_to_lista.isEmpty()) {
+            cycle_creation(distances, removed_nodes_ale_to_lista, cycles_for_destroy[1]);
+            cycle_creation(distances, removed_nodes_ale_to_lista, cycles_for_destroy[0]);
+        }
+        cycles = Arrays.copyOf(cycles_for_destroy, cycles_for_destroy.length);
         return cycles;
     }
 
