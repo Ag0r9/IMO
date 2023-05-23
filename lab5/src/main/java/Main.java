@@ -17,7 +17,7 @@ class Main {
         }
     }
 
-    static int size = 200;
+    static int size = 100;
 
     public static void main(String[] args) throws IOException {
         HelperFunctions.Node[] nodes = new HelperFunctions.Node[size];
@@ -53,10 +53,12 @@ class Main {
         Set<List<Integer>> same_paths = find_same_paths(list_of_cycles.get(0), list_of_cycles.get(1));
 
         List<Integer> not_used = IntStream.range(0, size).boxed().collect(Collectors.toList());
-        same_paths.stream().forEach(x-> x.forEach(not_used::remove));
-
+        for (List<Integer> x : same_paths) {
+            for (int i = 1; i < x.size() - 1; i++) {
+                not_used.remove(x.get(i));
+            }
+        }
         //złóż ścieżkę
-
 
 
         //lokalne przeszukiwanie
