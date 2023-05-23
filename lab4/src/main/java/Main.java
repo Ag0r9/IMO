@@ -276,8 +276,9 @@ class Main {
         //ArrayList[] cycles = MSLS(rand, distances);
         ArrayList[] cycles = generate_greedy_cycles(distances, first_id, second_id);
         //cycles = small_perturbation(distances, cycles);
-        //HelperFunctions.print_result(distances, cycles, args);
+        HelperFunctions.print_result(distances, cycles, args);
         cycles = destroy_and_repair(distances, cycles);
+
         HelperFunctions.print_result(distances, cycles, args);
 
         cycles[0].forEach(i -> System.out.print(i + " "));
@@ -357,6 +358,8 @@ class Main {
                     cycle_creation(distances, removed_nodes_ale_to_lista, cycles_for_destroy[0]);
                 break;
         }
+
+        cycles_for_destroy = steepest(distances, cycles_for_destroy);
         //jak jest poprawa to zwróć poprawione, jak nie to CHLIP, ale no trudno i zwróć stare
         if (HelperFunctions.get_total_dist(distances, cycles) - HelperFunctions.get_total_dist(distances, cycles_for_destroy) > 0) {
             return cycles_for_destroy;
