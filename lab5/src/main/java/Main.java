@@ -52,17 +52,19 @@ class Main {
     private static Cycles hybrid_evolutionary(double[][] distances) {
         Random rand = new Random();
         List<Cycles> list_of_cycles = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 15; i++) {
             int first_id = rand.nextInt(size);
             int second_id = HelperFunctions.find_second_starting_node(first_id, distances);
-            list_of_cycles.add(GreedyCycle.generate_greedy_cycles(distances, first_id, second_id));
+            list_of_cycles.add(Steepest.steepest(distances, GreedyCycle.generate_greedy_cycles(distances, first_id, second_id)));
         }
         for (int q = 0; q < 100; q++) {
             list_of_cycles.sort(Comparator.comparingDouble(c -> HelperFunctions.get_total_dist(distances, c)));
+
+            list_of_cycles = remove_same_dist_solutions(distances, list_of_cycles);
             //Utwórz początkową populację
 
             //poszukaj wspólnych ścieżek pomiędzy dwoma rozwiązaniami
-            List<List<Integer>> same_paths = find_same_paths(list_of_cycles.get(rand.nextInt(5)), list_of_cycles.get(rand.nextInt(20)));
+            List<List<Integer>> same_paths = find_same_paths(list_of_cycles.get(rand.nextInt(3)), list_of_cycles.get(rand.nextInt(10)));
             List<Integer> not_used = IntStream.range(0, size).boxed().collect(toList());
             Map<Integer, Integer> edges_of_paths = new HashMap<>();
             for (List<Integer> x : same_paths) {
@@ -121,16 +123,26 @@ class Main {
                 continue;
 
             Cycles x = new Cycles(cycle1, cycle2);
-            System.out.println(HelperFunctions.get_total_dist(distances, x));
+
+            //zakomentuj linijkę niżej, by usunąć lokalne przeszukiwanie
             x = Steepest.steepest(distances, x);
             list_of_cycles.add(x);
         }
-        //złóż ścieżkę
-
-
-        //lokalne przeszukiwanie
-
         return list_of_cycles.get(0);
+    }
+
+    private static List<Cycles> remove_same_dist_solutions(double[][] dist, List<Cycles> list_of_cycles) {
+        var to_remove = new ArrayList<Cycles>();
+        for (int i = 1; i < list_of_cycles.size(); i++) {
+            if (HelperFunctions.get_total_dist(dist, list_of_cycles.get(i - 1)) == HelperFunctions.get_total_dist(dist, list_of_cycles.get(i))) {
+                to_remove.add(list_of_cycles.get(i - 1));
+            }
+        }
+        list_of_cycles.removeAll(to_remove);
+        while(list_of_cycles.size()>20){
+            list_of_cycles.remove(list_of_cycles.get(list_of_cycles.size()-1));
+        }
+        return list_of_cycles;
     }
 
     static int cycle_creation_paths(double[][] dist, List<List<Integer>> not_used_paths, List<Integer> cycle1, List<Integer> cycle2) {
