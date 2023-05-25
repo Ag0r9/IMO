@@ -67,7 +67,7 @@ class Main {
             //usun rozwiazania, jesli mają te samą wartość długości
             list_of_cycles = remove_same_dist_solutions(distances, list_of_cycles);
 
-            //poszukaj wspólnych ścieżek pomiędzy dwoma rozwiązaniami
+            //poszukaj wspólnych ścieżek pomiędzy dwoma wylosowanymi rozwiązaniami
             int first_id = rand.nextInt(3);
             int second_id = first_id;
             while (second_id==first_id)
