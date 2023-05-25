@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GreedyCycle {
-    static void cycle_creation(double[][] dist, ArrayList<Integer> not_used, List<Integer> solution) {
+    static void cycle_creation(double[][] dist, List<Integer> not_used, List<Integer> solution) {
         double min_dist = Double.MAX_VALUE;
         int min_id = -1;
         int after_whom_in_solution = -1;
