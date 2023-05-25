@@ -16,6 +16,7 @@ class Main {
             this.second_cycle = second_cycle;
         }
     }
+
     static int size = 200;
     static int population = 15;
 
@@ -70,18 +71,15 @@ class Main {
             //poszukaj wspólnych ścieżek pomiędzy dwoma wylosowanymi rozwiązaniami
             int first_id = rand.nextInt(3);
             int second_id = first_id;
-            while (second_id==first_id)
+            while (second_id == first_id)
                 second_id = rand.nextInt(list_of_cycles.size());
 
             List<List<Integer>> same_paths = find_same_paths(list_of_cycles.get(first_id), list_of_cycles.get(second_id));
             List<Integer> not_used = IntStream.range(0, size).boxed().collect(toList());
-            Map<Integer, Integer> edges_of_paths = new HashMap<>();
             for (List<Integer> x : same_paths) {
                 for (int i = 0; i < x.size(); i++) {
                     not_used.remove(x.get(i));
                 }
-                edges_of_paths.put(x.get(0), findListIndex(same_paths, x.get(0)));
-                edges_of_paths.put(x.get(x.size() - 1), findListIndex(same_paths, x.get(x.size() - 1)));
             }
 
             //znajdz najbardziej od siebie oddalone punkty startowe, ktore sa albo wolnymi wierzcholkami albo krawedziami sciezki
@@ -92,29 +90,13 @@ class Main {
             List<Integer> cycle2 = new ArrayList<>();
             int first_start = two_most_distant_nodes_from_available.get(0);
             int second_start = two_most_distant_nodes_from_available.get(1);
-            if (edges_of_paths.containsKey(first_start)) {
-                cycle1.addAll(same_paths.get(first_start));
-                if (cycle1.get(0).equals(first_start)) {
-                    cycle1.add(first_start);
-                } else {
-                    cycle1.add(0, first_start);
-                }
-            } else {
-                cycle1.add(first_start);
-                cycle1.add(first_start);
-            }
 
-            if (edges_of_paths.containsKey(second_start)) {
-                cycle2.addAll(same_paths.get(second_start));
-                if (cycle2.get(0).equals(second_start)) {
-                    cycle2.add(second_start);
-                } else {
-                    cycle2.add(0, second_start);
-                }
-            } else {
-                cycle2.add(second_start);
-                cycle2.add(second_start);
-            }
+            cycle1.add(first_start);
+            cycle1.add(first_start);
+
+            cycle2.add(second_start);
+            cycle2.add(second_start);
+
             not_used.removeAll(Arrays.asList(second_start, first_start));
 
             //dodawaj do cykli sciezki w taki sposob, ze dodajemy sciezke do blizszego mu cyklu,
@@ -157,8 +139,8 @@ class Main {
             }
         }
         list_of_cycles.removeAll(to_remove);
-        while(list_of_cycles.size()>population){
-            list_of_cycles.remove(list_of_cycles.get(list_of_cycles.size()-1));
+        while (list_of_cycles.size() > population) {
+            list_of_cycles.remove(list_of_cycles.get(list_of_cycles.size() - 1));
         }
         return list_of_cycles;
     }
@@ -257,7 +239,6 @@ class Main {
     }
 
     private static List<List<Integer>> perform_findind_between_two_cycles(List<List<Integer>> commonPaths, List<Integer> cycle1, List<Integer> cycle2) {
-
         for (int i = 0; i < cycle1.size() - 2; i++) {
             int node1 = cycle1.get(i);
             int node2 = cycle1.get(i + 1);
