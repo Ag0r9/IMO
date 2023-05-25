@@ -228,9 +228,9 @@ class Main {
         perform_findind_between_two_cycles(same_paths, first_solution.first_cycle, second_solution.second_cycle);
         perform_findind_between_two_cycles(same_paths, first_solution.second_cycle, second_solution.first_cycle);
         perform_findind_between_two_cycles(same_paths, first_solution.second_cycle, second_solution.second_cycle);
+        same_paths = mergeLists(same_paths);
         same_paths = eliminateSublists(same_paths);
         same_paths = eliminateDuplicateLists(same_paths);
-        same_paths = mergeLists(same_paths);
         return same_paths;
     }
 
