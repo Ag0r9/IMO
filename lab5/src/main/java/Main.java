@@ -16,21 +16,22 @@ class Main {
             this.second_cycle = second_cycle;
         }
     }
-
     static int size = 200;
+    static int population = 15;
 
     public static void main(String[] args) throws IOException {
         HelperFunctions.Node[] nodes = new HelperFunctions.Node[size];
         HelperFunctions.load_data(nodes, "kroA200.tsp");
         double[][] distances = HelperFunctions.calculate_distance(nodes);
-        Random rand = new Random();
-        int first_id, second_id;
-        first_id = rand.nextInt(size);
-        second_id = HelperFunctions.find_second_starting_node(first_id, distances);
         Cycles cycles = hybrid_evolutionary(distances);
 
-        //Cycles cycles = generate_greedy_cycles(distances, first_id, second_id);
-        //cycles = destroy_and_repair(distances, cycles);
+//        Random rand = new Random();
+//        int first_id, second_id;
+//        first_id = rand.nextInt(size);
+//        second_id = HelperFunctions.find_second_starting_node(first_id, distances);
+//
+//        Cycles cycles = GreedyCycle.generate_greedy_cycles(distances, first_id, second_id);
+//        cycles = DestroyAndRepair.destroy_and_repair(distances, cycles);
 
         System.out.println(HelperFunctions.get_total_dist(distances, cycles));
         cycles.first_cycle.forEach(i -> System.out.print(i + " "));
@@ -52,19 +53,27 @@ class Main {
     private static Cycles hybrid_evolutionary(double[][] distances) {
         Random rand = new Random();
         List<Cycles> list_of_cycles = new ArrayList<>();
-        for (int i = 0; i < 15; i++) {
+        //Utwórz początkową populację
+        for (int i = 0; i < population; i++) {
             int first_id = rand.nextInt(size);
             int second_id = HelperFunctions.find_second_starting_node(first_id, distances);
             list_of_cycles.add(Steepest.steepest(distances, GreedyCycle.generate_greedy_cycles(distances, first_id, second_id)));
         }
+
         for (int q = 0; q < 100; q++) {
+            //posortuj rozwiazania wg jakosci
             list_of_cycles.sort(Comparator.comparingDouble(c -> HelperFunctions.get_total_dist(distances, c)));
 
+            //usun rozwiazania, jesli mają te samą wartość długości
             list_of_cycles = remove_same_dist_solutions(distances, list_of_cycles);
-            //Utwórz początkową populację
 
             //poszukaj wspólnych ścieżek pomiędzy dwoma rozwiązaniami
-            List<List<Integer>> same_paths = find_same_paths(list_of_cycles.get(rand.nextInt(3)), list_of_cycles.get(rand.nextInt(10)));
+            int first_id = rand.nextInt(3);
+            int second_id = first_id;
+            while (second_id==first_id)
+                second_id = rand.nextInt(list_of_cycles.size());
+
+            List<List<Integer>> same_paths = find_same_paths(list_of_cycles.get(first_id), list_of_cycles.get(second_id));
             List<Integer> not_used = IntStream.range(0, size).boxed().collect(toList());
             Map<Integer, Integer> edges_of_paths = new HashMap<>();
             for (List<Integer> x : same_paths) {
@@ -74,6 +83,9 @@ class Main {
                 edges_of_paths.put(x.get(0), findListIndex(same_paths, x.get(0)));
                 edges_of_paths.put(x.get(x.size() - 1), findListIndex(same_paths, x.get(x.size() - 1)));
             }
+
+            //znajdz najbardziej od siebie oddalone punkty startowe, ktore sa albo wolnymi wierzcholkami albo krawedziami sciezki
+            //i utworz poczatkowy cykl skladajacy sie z 1 punktu albo ze sciezki
             List<Integer> two_most_distant_nodes_from_available = find_two_most_distant_nodes_from_available(distances, not_used);
 
             List<Integer> cycle1 = new ArrayList<>();
@@ -104,10 +116,14 @@ class Main {
                 cycle2.add(second_start);
             }
             not_used.removeAll(Arrays.asList(second_start, first_start));
+
+            //dodawaj do cykli sciezki w taki sposob, ze dodajemy sciezke do blizszego mu cyklu,
+            // pod warunkiem, ze nie przekraczamy polowy wierzcholkow
             if (cycle_creation_paths(distances, same_paths, cycle1, cycle2) == -1) {
                 continue;
             }
 
+            //dodaj wolne wierzcholki metoda zachlannego cyklu
             while (cycle1.size() != size / 2 + 1 && cycle2.size() != size / 2 + 1) {
                 GreedyCycle.cycle_creation(distances, not_used, cycle1);
                 GreedyCycle.cycle_creation(distances, not_used, cycle2);
@@ -118,7 +134,8 @@ class Main {
             while (cycle2.size() != size / 2 + 1)
                 GreedyCycle.cycle_creation(distances, not_used, cycle2);
 
-
+            //ten warunek sprawia ze dziala, bo sa przez sciezki duplikaty czasem, nie wiem czemu,
+            //a z duplikatami steepest głupieje
             if (hasDuplicates(cycle1.subList(1, cycle1.size())) || hasDuplicates(cycle2.subList(1, cycle2.size())) || hasDuplicates(Stream.concat(cycle1.subList(1, cycle1.size() - 1).stream(), cycle2.subList(1, cycle2.size() - 1).stream()).collect(toList())))
                 continue;
 
@@ -126,6 +143,7 @@ class Main {
 
             //zakomentuj linijkę niżej, by usunąć lokalne przeszukiwanie
             x = Steepest.steepest(distances, x);
+
             list_of_cycles.add(x);
         }
         return list_of_cycles.get(0);
@@ -139,7 +157,7 @@ class Main {
             }
         }
         list_of_cycles.removeAll(to_remove);
-        while(list_of_cycles.size()>20){
+        while(list_of_cycles.size()>population){
             list_of_cycles.remove(list_of_cycles.get(list_of_cycles.size()-1));
         }
         return list_of_cycles;

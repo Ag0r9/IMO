@@ -1,7 +1,7 @@
 import java.util.*;
 
 public class DestroyAndRepair {
-    private static Main.Cycles destroy_and_repair(double[][] distances, Main.Cycles cycles) {
+    static Main.Cycles destroy_and_repair(double[][] distances, Main.Cycles cycles) {
         List<Nearest> nearests = new ArrayList<>();
         //utworz listę najbliższych sobie wierzchołków
         for (int i = 1; i < cycles.first_cycle.size() - 1; i++) {
