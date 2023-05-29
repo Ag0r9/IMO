@@ -28,7 +28,6 @@ public class DestroyAndRepair {
         Set<Integer> removed_nodes = new HashSet<>();
 
         //idiotyczna inicjalizacja tablicy pomocnicznej, bo zazwyczaj idzie po referencji zamiast po wartościach XD
-        System.out.println( HelperFunctions.get_total_dist(distances,cycles));
         Main.Cycles cycles_for_destroy = cycles.clone();
 
         //usun 20 procent najbliższych sobie wierzchołków, które są w osobnych cyklach
@@ -69,9 +68,6 @@ public class DestroyAndRepair {
 
         cycles_for_destroy = Steepest.steepest(distances, cycles_for_destroy);
         //jak jest poprawa to zwróć poprawione, jak nie to CHLIP, ale no trudno i zwróć stare
-        System.out.println( HelperFunctions.get_total_dist(distances,cycles));
-        System.out.println( HelperFunctions.get_total_dist(distances,cycles_for_destroy));
-        System.out.println();
 
         if (HelperFunctions.get_total_dist(distances, cycles) - HelperFunctions.get_total_dist(distances, cycles_for_destroy) > 0) {
             return cycles_for_destroy;

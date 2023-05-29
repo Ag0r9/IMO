@@ -34,7 +34,9 @@ class Main {
 
         System.out.println(HelperFunctions.get_total_dist(distances, cycles));
         System.out.println();
-        cycles = DestroyAndRepair.destroy_and_repair(distances,cycles);
+        for (int i = 0; i <100 ; i++) {
+            cycles = DestroyAndRepair.destroy_and_repair(distances,cycles);
+        }
         System.out.println(HelperFunctions.get_total_dist(distances, cycles));
 
 
@@ -67,7 +69,7 @@ class Main {
         list_of_cycles.sort(Comparator.comparingDouble(c -> HelperFunctions.get_total_dist(distances, c)));
         System.out.println(HelperFunctions.get_total_dist(distances,list_of_cycles.get(0)));
         System.out.println();
-        for (int q = 0; q < 60; q++) {
+        for (int q = 0; q < 560; q++) {
             //posortuj rozwiazania wg jakosci
             list_of_cycles.sort(Comparator.comparingDouble(c -> HelperFunctions.get_total_dist(distances, c)));
 
@@ -97,11 +99,17 @@ class Main {
             int first_start = two_most_distant_nodes_from_available.get(0);
             int second_start = two_most_distant_nodes_from_available.get(1);
 
+            if(first_start ==-1 || second_start == -1)
+                continue;
+
             cycle1.add(first_start);
             cycle1.add(first_start);
 
             cycle2.add(second_start);
             cycle2.add(second_start);
+
+
+
 
             not_used.removeAll(Arrays.asList(second_start, first_start));
 
@@ -133,9 +141,7 @@ class Main {
             x = Steepest.steepest(distances, x);
             list_of_cycles.add(x);
             var d = HelperFunctions.get_total_dist(distances, x);
-            if(d<32000.0){
-                System.out.println(d);
-            }
+
         }
         return list_of_cycles.get(0);
     }

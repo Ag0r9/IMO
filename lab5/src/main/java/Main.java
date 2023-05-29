@@ -90,6 +90,10 @@ class Main {
             List<Integer> cycle2 = new ArrayList<>();
             int first_start = two_most_distant_nodes_from_available.get(0);
             int second_start = two_most_distant_nodes_from_available.get(1);
+            if(first_start == -1 || second_start == -1){
+                continue;
+            }
+
 
             cycle1.add(first_start);
             cycle1.add(first_start);
