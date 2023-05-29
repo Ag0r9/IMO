@@ -1,5 +1,6 @@
 import java.util.*;
 import java.io.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -30,13 +31,13 @@ class Main {
         HelperFunctions.Node[] nodes = new HelperFunctions.Node[size];
         HelperFunctions.load_data(nodes, "kroA200.tsp");
         double[][] distances = HelperFunctions.calculate_distance(nodes);
-        Cycles cycles = hybrid_evolutionary(distances);
-
-        System.out.println(HelperFunctions.get_total_dist(distances, cycles));
-        System.out.println();
-        for (int i = 0; i <100 ; i++) {
-            cycles = DestroyAndRepair.destroy_and_repair(distances,cycles);
-        }
+        //Cycles cycles = hybrid_evolutionary(distances);
+        Cycles cycles = MSLS(new Random(),distances);
+        //System.out.println(HelperFunctions.get_total_dist(distances, cycles));
+        //System.out.println();
+        //for (int i = 0; i <100 ; i++) {
+        //    cycles = DestroyAndRepair.destroy_and_repair(distances,cycles);
+        //}
         System.out.println(HelperFunctions.get_total_dist(distances, cycles));
 
 
@@ -63,7 +64,7 @@ class Main {
         for (int i = 0; i < population; i++) {
             int first_id = rand.nextInt(size);
             int second_id = HelperFunctions.find_second_starting_node(first_id, distances);
-            list_of_cycles.add(GreedyCycle.generate_greedy_cycles(distances, first_id, second_id));
+            list_of_cycles.add(Steepest.steepest(distances, GreedyCycle.generate_greedy_cycles(distances, first_id, second_id)));
         }
 
         list_of_cycles.sort(Comparator.comparingDouble(c -> HelperFunctions.get_total_dist(distances, c)));
@@ -144,6 +145,50 @@ class Main {
 
         }
         return list_of_cycles.get(0);
+    }
+
+    private static Cycles MSLS(Random rand, double[][] distances) {
+        Cycles best_cycles = new Cycles(null,null);
+        double best_dist = Double.MAX_VALUE;
+        for (int i = 0; i < 100; i++) {
+            int first_id = rand.nextInt(size);
+            int second_id = HelperFunctions.find_second_starting_node(first_id, distances);
+            Cycles cycles = generate_random_cycles(first_id, second_id);
+
+            double gain = -1;
+            cycles =  Steepest.steepest(distances, cycles);
+            double total_dist = HelperFunctions.get_total_dist(distances, cycles);
+            if (total_dist < best_dist) {
+                best_cycles = cycles.clone();
+                best_dist = total_dist;
+            }
+            System.out.println(i);
+        }
+        return best_cycles;
+    }
+    static Cycles generate_random_cycles(int first_id, int second_id) {
+        List<Integer> not_used = IntStream.range(0, size).filter(i -> i != first_id && i != second_id).boxed().collect(Collectors.toList());
+        ArrayList<Integer> first_cycle = new ArrayList<>() {{
+            add(first_id);
+        }};
+        ArrayList<Integer> second_cycle = new ArrayList<>() {{
+            add(second_id);
+        }};
+
+        Random rand = new Random();
+        while (first_cycle.size() < size / 2) {
+            int idx = rand.nextInt(not_used.size());
+            first_cycle.add(not_used.get(idx));
+            not_used.remove(idx);
+        }
+        first_cycle.add(first_id);
+        while (second_cycle.size() < size / 2) {
+            int idx = rand.nextInt(not_used.size());
+            second_cycle.add(not_used.get(idx));
+            not_used.remove(idx);
+        }
+        second_cycle.add(second_id);
+        return new Cycles(first_cycle,second_cycle);
     }
 
     private static List<Cycles> remove_same_dist_solutions(double[][] dist, List<Cycles> list_of_cycles) {
