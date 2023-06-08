@@ -24,47 +24,106 @@ class Main {
         HelperFunctions.Node[] nodes = new HelperFunctions.Node[size];
         HelperFunctions.load_data(nodes, "kroA200.tsp");
         double[][] distances = HelperFunctions.calculate_distance(nodes);
-        Cycles cycles = hybrid_evolutionary(distances);
-
         Random rand = new Random();
+
+        Cycles b = hybrid_evolutionary(distances);
+//        List<Cycles> input = new ArrayList<>();
+//        input.add(new Cycles( List.of(5, 1, 6, 5),List.of(3,4,7,3)));
+//        input.add(new Cycles( List.of(5, 1, 6, 5),List.of(3,4,7,3)));
+//        input.add(new Cycles( List.of(6, 1, 2, 6),List.of(3,9,7,3)));
+//
+//
+//        var naj = input.get(0);
+//        for (Cycles cycles : input) {
+//            System.out.println(HelperFunctions.get_total_dist(distances, cycles));
+//            List<List<Integer>> same_paths = find_same_paths(cycles, naj);
+//
+//            System.out.println((double) same_paths.stream().flatMap(List::stream).count() / 6);
+//
+//            System.out.println( 1+ determine_vertex_similarity(cycles, naj));
+//
+//            System.out.println("\n");
+//        }
 
 //
 //        Cycles cycles = GreedyCycle.generate_greedy_cycles(distances, first_id, second_id);
 //        cycles = DestroyAndRepair.destroy_and_repair(distances, cycles);
 
-        /*List<Cycles> solutions = new ArrayList<>();
-        int first_id, second_id;
+            List<Cycles> solutions = new ArrayList<>();
+            int first_id, second_id;
 
-        for (int i = 0; i < 1000; i++) {
-            Thread.sleep(500);
-            first_id = rand.nextInt(size);
-            second_id = HelperFunctions.find_second_starting_node(first_id, distances);
-            Cycles x = generate_random_cycles(first_id, second_id);
+            for (int i = 0; i < 1001; i++) {
+                Thread.sleep(150);
+                first_id = rand.nextInt(size);
+                second_id = HelperFunctions.find_second_starting_node(first_id, distances);
+                Cycles x = generate_random_cycles(first_id, second_id);
 
-            int gain = -1;
-            int iter = 0;
-            while (gain < 0) {
-                iter++;
-                gain = greedy_vertex_between_two_exchange(distances, x.first_cycle, x.second_cycle);
-                gain += greedy_edge_exchange(distances, x.first_cycle);
-                gain += greedy_edge_exchange(distances, x.second_cycle);
+                int gain = -1;
+                while (gain < 0) {
+                    gain = greedy_vertex_between_two_exchange(distances, x.first_cycle, x.second_cycle);
+                    gain += greedy_edge_exchange(distances, x.first_cycle);
+                    gain += greedy_edge_exchange(distances, x.second_cycle);
+                }
+                solutions.add(x);
             }
-            solutions.add(x);
-        }
-        solutions.sort(Comparator.comparingDouble(c -> HelperFunctions.get_total_dist(distances, c)));
-        for (Cycles cycles : solutions) {
-            System.out.println(HelperFunctions.get_total_dist(distances, cycles));
-            cycles.first_cycle.forEach(i -> System.out.print(i + " "));
-            System.out.println();
-            cycles.second_cycle.forEach(i -> System.out.print(i + " "));
-            System.out.println("\n");
-        }*/
+            solutions.sort(Comparator.comparingDouble(c -> HelperFunctions.get_total_dist(distances, c)));
+            solutions.add(0,b);
+            var naj = solutions.get(0);
+            for (Cycles cycles : solutions) {
+                System.out.println(HelperFunctions.get_total_dist(distances, cycles));
+                List<List<Integer>> same_paths = find_same_paths(cycles, naj);
 
-        System.out.println(HelperFunctions.get_total_dist(distances, cycles));
-        cycles.first_cycle.forEach(i -> System.out.print(i + " "));
+                System.out.printf("%.5f",(double) same_paths.stream().flatMap(List::stream).count() / size);
+                System.out.println();
+                System.out.printf("%.5f", 1+ determine_vertex_similarity(cycles, naj));
+                System.out.println();
+
+                List<Double> mean_edges = new ArrayList<>();
+                List<Double> mean_vertex= new ArrayList<>();
+                for (Cycles c : solutions){
+                    if(c.equals(cycles))
+                        continue;
+                    List<List<Integer>> paths = find_same_paths(cycles, c);
+                    mean_edges.add((double) paths.stream().flatMap(List::stream).count() / size);
+                    mean_vertex.add( 1+ determine_vertex_similarity(cycles, c));
+                }
+                System.out.printf("%.5f",mean_edges
+                        .stream()
+                        .mapToDouble(a -> a)
+                        .average().getAsDouble());
+                System.out.println();
+                System.out.printf("%.5f", mean_vertex
+                                        .stream()
+                                        .mapToDouble(a -> a)
+                                        .average().getAsDouble());
+                System.out.println("\n");
+
+            }
+
+        System.out.println(HelperFunctions.get_total_dist(distances, solutions.get(0)));
+        solutions.get(0).first_cycle.forEach(i -> System.out.print(i + " "));
         System.out.println();
-        cycles.second_cycle.forEach(i -> System.out.print(i + " "));
+        solutions.get(0).second_cycle.forEach(i -> System.out.print(i + " "));
         System.out.println("\n");
+    }
+    private static double determine_vertex_similarity(Cycles cycles, Cycles naj) {
+        Set y=new HashSet(), x = new HashSet(), z=new HashSet();
+        x.addAll(cycles.first_cycle);
+        x.addAll(naj.first_cycle);
+
+        y.addAll(cycles.first_cycle);
+        y.addAll(naj.second_cycle);
+
+        z.addAll(cycles.second_cycle);
+
+        if(x.size()<y.size()){
+            z.addAll(naj.second_cycle);
+            return (double)(-x.size()- z.size() + size)/size;
+        }
+        else{
+            z.addAll(naj.first_cycle);
+            return (double)(-y.size()- z.size() + size)/size;
+        }
     }
 
     static Cycles generate_random_cycles(int first_id, int second_id) {
@@ -173,7 +232,7 @@ class Main {
         for (int i = 0; i < population; i++) {
             int first_id = rand.nextInt(size);
             int second_id = HelperFunctions.find_second_starting_node(first_id, distances);
-            list_of_cycles.add(Steepest.steepest(distances, GreedyCycle.generate_greedy_cycles(distances, first_id, second_id)));
+            list_of_cycles.add(GreedyCycle.generate_greedy_cycles(distances, first_id, second_id));
         }
 
         for (int q = 0; q < 100; q++) {
@@ -192,8 +251,8 @@ class Main {
             List<List<Integer>> same_paths = find_same_paths(list_of_cycles.get(first_id), list_of_cycles.get(second_id));
             List<Integer> not_used = IntStream.range(0, size).boxed().collect(toList());
             for (List<Integer> x : same_paths) {
-                for (int i = 0; i < x.size(); i++) {
-                    not_used.remove(x.get(i));
+                for (Integer integer : x) {
+                    not_used.remove(integer);
                 }
             }
 
@@ -205,7 +264,7 @@ class Main {
             List<Integer> cycle2 = new ArrayList<>();
             int first_start = two_most_distant_nodes_from_available.get(0);
             int second_start = two_most_distant_nodes_from_available.get(1);
-            if(first_start == -1 || second_start == -1){
+            if (first_start == -1 || second_start == -1) {
                 continue;
             }
 
@@ -291,16 +350,6 @@ class Main {
         return 0;
     }
 
-    public static int findListIndex(List<List<Integer>> listOfLists, int target) {
-        for (int i = 0; i < listOfLists.size(); i++) {
-            List<Integer> currentList = listOfLists.get(i);
-            if (currentList.contains(target)) {
-                return i;
-            }
-        }
-        return -1;  // Return -1 if the target is not found in any list
-    }
-
     private static List<Integer> find_two_most_distant_nodes_from_available(double[][] distances, List<Integer> not_used) {
         List<Integer> result_nodes = new ArrayList<>(
         ) {{
@@ -330,31 +379,7 @@ class Main {
         perform_findind_between_two_cycles(same_paths, first_solution.second_cycle, second_solution.first_cycle);
         perform_findind_between_two_cycles(same_paths, first_solution.second_cycle, second_solution.second_cycle);
         same_paths = mergeLists(same_paths);
-        same_paths = eliminateSublists(same_paths);
-        same_paths = eliminateDuplicateLists(same_paths);
         return same_paths;
-    }
-
-    private static List<List<Integer>> eliminateDuplicateLists(List<List<Integer>> listOfLists) {
-        Set<List<Integer>> uniqueLists = new HashSet<>(listOfLists);
-        return new ArrayList<>(uniqueLists);
-    }
-
-    private static List<List<Integer>> eliminateSublists(List<List<Integer>> setOfLists) {
-        List<List<Integer>> filteredList = new ArrayList<>();
-        for (List<Integer> currentList : setOfLists) {
-            boolean isSubset = false;
-            for (List<Integer> otherList : setOfLists) {
-                if (currentList != otherList && otherList.containsAll(currentList)) {
-                    isSubset = true;
-                    break;
-                }
-            }
-            if (!isSubset) {
-                filteredList.add(currentList);
-            }
-        }
-        return filteredList;
     }
 
     private static List<List<Integer>> perform_findind_between_two_cycles(List<List<Integer>> commonPaths, List<Integer> cycle1, List<Integer> cycle2) {
@@ -390,38 +415,40 @@ class Main {
         return commonPaths;
     }
 
-    public static List<List<Integer>> mergeLists(List<List<Integer>> listOfLists) {
-        Map<Integer, List<Integer>> startMap = new HashMap<>();
-        Map<Integer, List<Integer>> endMap = new HashMap<>();
+    public static List<List<Integer>> mergeLists(List<List<Integer>> input) {
+        Set<List<Integer>> exclusionSet = new HashSet<>();
+        List<List<Integer>> result = new ArrayList<>();
 
-        for (List<Integer> list : listOfLists) {
-            int start = list.get(0);
-            int end = list.get(list.size() - 1);
+        for (List<Integer> currentList : input) {
+            boolean foundSublist = false;
 
-            List<Integer> mergedList = new ArrayList<>(list);
+            for (List<Integer> otherList : input) {
+                if (!currentList.equals(otherList) && isSublist(currentList, otherList)) {
+                    foundSublist = true;
+                    break;
+                }
+            }
 
-            if (endMap.containsKey(start)) {
-                List<Integer> previousList = endMap.get(start);
-                mergedList.remove(0);
-                previousList.addAll(mergedList);
-                endMap.put(end, previousList);
-                endMap.remove(start);
-                startMap.remove(start);
-                startMap.put(end, previousList);
-            } else if (startMap.containsKey(end)) {
-                List<Integer> nextList = startMap.get(end);
-                mergedList.remove(mergedList.size() - 1);
-                mergedList.addAll(nextList);
-                startMap.remove(end);
-                endMap.remove(end);
-                startMap.put(start, mergedList);
-                endMap.put(start, mergedList);
-            } else {
-                startMap.put(start, mergedList);
-                endMap.put(end, mergedList);
+            if (!foundSublist && !exclusionSet.contains(currentList)) {
+                result.add(new ArrayList<>(currentList));
+                exclusionSet.add(currentList);
             }
         }
 
-        return new ArrayList<>(startMap.values());
+        return result;
+    }
+
+    private static boolean isSublist(List<Integer> sublist, List<Integer> list) {
+        if (sublist.size() > list.size()) {
+            return false;
+        }
+
+        for (int i = 0; i <= list.size() - sublist.size(); i++) {
+            if (list.subList(i, i + sublist.size()).equals(sublist)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
