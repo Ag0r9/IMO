@@ -8,7 +8,6 @@
         <outputRelativeToContentRoot value="true" />
         <module name="lab3" />
         <module name="IMO2" />
-        <module name="lab4" />
         <module name="lab2" />
       </profile>
     </annotationProcessing>
